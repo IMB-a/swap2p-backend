@@ -1,4 +1,4 @@
-module github.com/IMB-a/swap2p
+module github.com/IMB-a/swap2p-backend
 
 go 1.18
 
