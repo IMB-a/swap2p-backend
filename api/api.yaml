@@ -1,0 +1,175 @@
+openapi: 3.0.3
+info:
+  title: Title
+  description: Title
+  version: 0.0.0
+servers:
+  - url: 'https'
+paths:
+  /{chatID}:
+    parameters:
+      - $ref: '#/components/parameters/pChatID'
+    get:
+      operationId: getPersonalData
+      responses:
+        200:
+          $ref: '#/components/responses/personalDataResp'
+        404:
+          $ref: '#/components/responses/chatNotFoundResp'
+
+  /{chatID}/wallet:
+    parameters:
+      - $ref: '#/components/parameters/pChatID'
+      - $ref: '#/components/parameters/qWalletAddress'
+    post:
+      operationId: addWallet
+      responses:
+        200:
+          $ref: '#/components/responses/okResp'
+
+  /{chatID}/state:
+    parameters:
+      - $ref: '#/components/parameters/pChatID'
+      - $ref: '#/components/parameters/qChatState'
+    post:
+      operationId: updateState
+      responses:
+        200:
+          $ref: '#/components/responses/okResp'
+
+  /trades:
+    parameters:
+      - $ref: '#/components/parameters/qOffset'
+      - $ref: '#/components/parameters/qLimit'
+    get:
+      operationId: getAllTrades
+      responses:
+        200:
+          $ref: '#/components/responses/allTradesResp'
+
+components:
+  parameters:
+    pChatID:
+      name: chatID
+      in: path
+      schema:
+        type: string
+      required: true
+    qWalletAddress:
+      name: wallet
+      in: query
+      schema:
+        type: string
+      required: true
+    qChatState:
+      name: state
+      in: query
+      schema:
+        type: string
+      required: true
+
+    qOffset:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        default: 0
+      required: false
+    qLimit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        default: 1000
+      required: false
+
+
+  schemas:
+    tradeList:
+      type: array
+      items:
+        $ref: '#/components/schemas/trade'
+
+    trade:
+      type: object
+      required:
+        - id
+        - xAddress
+        - yAddress
+        - xAsset
+        - yAsset
+        - xAmount
+        - yAmount
+        - closed
+        - expires
+      properties:
+        id:
+          type: integer
+        xAddress:
+          type: string
+        yAddress:
+          type: string
+        xAsset:
+          type: string
+        yAsset:
+          type: string
+        xAmount:
+          type: integer
+        yAmount:
+          type: integer
+        closed:
+          type: boolean
+        expires:
+          type: integer
+          description: unix timestamp
+
+    personalData:
+      type: object
+      required:
+      properties:
+        walletAddress:
+          type: string
+        state:
+          type: string
+        balance:
+          $ref: '#/components/schemas/balance'
+
+    balance:
+      type: array
+      items:
+        $ref: '#/components/schemas/singleBalance'
+
+    singleBalance:
+      type: object
+      required:
+        - asset
+        - amount
+      properties:
+        asset:
+          type: string
+        address:
+          type: string
+        amount:
+          type: integer
+        decimals:
+          type: integer
+
+  responses:
+    # 200
+    personalDataResp:
+      description: ''
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/personalData'
+    allTradesResp:
+      description: ''
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/tradeList'
+    okResp:
+      description: ''
+    # 404
+    chatNotFoundResp:
+      description: ''
