@@ -28,10 +28,10 @@ type PersonalData struct {
 
 // SingleBalance defines model for singleBalance.
 type SingleBalance struct {
-	Address  *string `json:"address,omitempty"`
-	Amount   int     `json:"amount"`
-	Asset    string  `json:"asset"`
-	Decimals *int    `json:"decimals,omitempty"`
+	Address  string `db:"asset_address" json:"address"`
+	Amount   int    `db:"amount" json:"amount"`
+	Asset    string `db:"asset_name" json:"asset"`
+	Decimals int    `db:"asset_decimals" json:"decimals"`
 }
 
 // Trade defines model for trade.

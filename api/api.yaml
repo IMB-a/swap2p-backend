@@ -143,16 +143,26 @@ components:
       type: object
       required:
         - asset
+        - address
         - amount
+        - decimals
       properties:
         asset:
           type: string
+          x-oapi-codegen-extra-tags:
+            db: asset_name
         address:
           type: string
+          x-oapi-codegen-extra-tags:
+            db: asset_address
         amount:
           type: integer
+          x-oapi-codegen-extra-tags:
+            db: amount
         decimals:
           type: integer
+          x-oapi-codegen-extra-tags:
+            db: asset_decimals
 
   responses:
     # 200
