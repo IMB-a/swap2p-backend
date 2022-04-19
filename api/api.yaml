@@ -126,6 +126,9 @@ components:
     personalData:
       type: object
       required:
+        - walletAddress
+        - state
+        - balance
       properties:
         walletAddress:
           type: string

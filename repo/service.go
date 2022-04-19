@@ -31,7 +31,7 @@ func NewService(cfg *Config) (*Service, error) {
 
 type Repository interface {
 	GetTrades(ctx context.Context, offset, limit int) (api.TradeList, error)
-	GetPersonalData(ctx context.Context, chatID string) (api.PersonalData, error)
+	GetPersonalData(ctx context.Context, chatID string) (*api.PersonalData, error)
 	UpsertPersonAddress(ctx context.Context, chatID, address string) error
 	UpdatePersonState(ctx context.Context, chatID, state string) error
 }

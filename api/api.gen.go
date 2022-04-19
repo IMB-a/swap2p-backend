@@ -21,9 +21,9 @@ type Balance []SingleBalance
 
 // PersonalData defines model for personalData.
 type PersonalData struct {
-	Balance       *Balance `json:"balance,omitempty"`
-	State         *string  `json:"state,omitempty"`
-	WalletAddress *string  `json:"walletAddress,omitempty"`
+	Balance       Balance `json:"balance"`
+	State         string  `json:"state"`
+	WalletAddress string  `json:"walletAddress"`
 }
 
 // SingleBalance defines model for singleBalance.

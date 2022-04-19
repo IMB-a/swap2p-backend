@@ -3,7 +3,8 @@
 CREATE TABLE telegram_user
 (
     user_id UUID PRIMARY KEY,
-    chat_id TEXT UNIQUE NOT NULL
+    chat_id TEXT UNIQUE NOT NULL,
+    state   TEXT        NOT NULL
 );
 
 create table address
@@ -21,9 +22,10 @@ create table asset
 
 create table balance
 (
-    address TEXT PRIMARY KEY REFERENCES asset,
-    user_id UUID PRIMARY KEY REFERENCES telegram_user,
-    amount  INT NOT NULL DEFAULT 0
+    asset_address TEXT REFERENCES asset,
+    user_id       UUID REFERENCES telegram_user,
+    amount        INT NOT NULL DEFAULT 0,
+    primary key (user_id)
 );
 
 -- +goose Down
