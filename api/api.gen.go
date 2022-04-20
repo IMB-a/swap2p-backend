@@ -19,17 +19,22 @@ import (
 // Balance defines model for balance.
 type Balance []SingleBalance
 
+// Error defines model for error.
+type Error struct {
+	Error string `json:"error"`
+}
+
 // PersonalData defines model for personalData.
 type PersonalData struct {
 	Balance       Balance `json:"balance"`
-	State         string  `json:"state"`
-	WalletAddress string  `json:"walletAddress"`
+	State         string  `db:"state" json:"state"`
+	WalletAddress string  `db:"wallet_address" json:"walletAddress"`
 }
 
 // SingleBalance defines model for singleBalance.
 type SingleBalance struct {
 	Address  string `db:"asset_address" json:"address"`
-	Amount   int    `db:"amount" json:"amount"`
+	Amount   uint64 `db:"amount" json:"amount"`
 	Asset    string `db:"asset_name" json:"asset"`
 	Decimals int    `db:"asset_decimals" json:"decimals"`
 }
@@ -69,6 +74,9 @@ type QWalletAddress string
 
 // AllTradesResp defines model for allTradesResp.
 type AllTradesResp TradeList
+
+// ErrorResp defines model for errorResp.
+type ErrorResp Error
 
 // PersonalDataResp defines model for personalDataResp.
 type PersonalDataResp PersonalData
@@ -168,6 +176,9 @@ type ClientInterface interface {
 	// GetPersonalData request
 	GetPersonalData(ctx context.Context, chatID PChatID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// InitPersonalData request
+	InitPersonalData(ctx context.Context, chatID PChatID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// UpdateState request
 	UpdateState(ctx context.Context, chatID PChatID, params *UpdateStateParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -189,6 +200,18 @@ func (c *Client) GetAllTrades(ctx context.Context, params *GetAllTradesParams, r
 
 func (c *Client) GetPersonalData(ctx context.Context, chatID PChatID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetPersonalDataRequest(c.Server, chatID)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) InitPersonalData(ctx context.Context, chatID PChatID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewInitPersonalDataRequest(c.Server, chatID)
 	if err != nil {
 		return nil, err
 	}
@@ -313,6 +336,40 @@ func NewGetPersonalDataRequest(server string, chatID PChatID) (*http.Request, er
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewInitPersonalDataRequest generates requests for InitPersonalData
+func NewInitPersonalDataRequest(server string, chatID PChatID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "chatID", runtime.ParamLocationPath, chatID)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -469,6 +526,9 @@ type ClientWithResponsesInterface interface {
 	// GetPersonalData request
 	GetPersonalDataWithResponse(ctx context.Context, chatID PChatID, reqEditors ...RequestEditorFn) (*GetPersonalDataResponse, error)
 
+	// InitPersonalData request
+	InitPersonalDataWithResponse(ctx context.Context, chatID PChatID, reqEditors ...RequestEditorFn) (*InitPersonalDataResponse, error)
+
 	// UpdateState request
 	UpdateStateWithResponse(ctx context.Context, chatID PChatID, params *UpdateStateParams, reqEditors ...RequestEditorFn) (*UpdateStateResponse, error)
 
@@ -502,6 +562,7 @@ type GetPersonalDataResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *PersonalData
+	JSONDefault  *Error
 }
 
 // Status returns HTTPResponse.Status
@@ -514,6 +575,28 @@ func (r GetPersonalDataResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetPersonalDataResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type InitPersonalDataResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSONDefault  *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r InitPersonalDataResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r InitPersonalDataResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -578,6 +661,15 @@ func (c *ClientWithResponses) GetPersonalDataWithResponse(ctx context.Context, c
 		return nil, err
 	}
 	return ParseGetPersonalDataResponse(rsp)
+}
+
+// InitPersonalDataWithResponse request returning *InitPersonalDataResponse
+func (c *ClientWithResponses) InitPersonalDataWithResponse(ctx context.Context, chatID PChatID, reqEditors ...RequestEditorFn) (*InitPersonalDataResponse, error) {
+	rsp, err := c.InitPersonalData(ctx, chatID, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseInitPersonalDataResponse(rsp)
 }
 
 // UpdateStateWithResponse request returning *UpdateStateResponse
@@ -645,6 +737,39 @@ func ParseGetPersonalDataResponse(rsp *http.Response) (*GetPersonalDataResponse,
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseInitPersonalDataResponse parses an HTTP response from a InitPersonalDataWithResponse call
+func ParseInitPersonalDataResponse(rsp *http.Response) (*InitPersonalDataResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &InitPersonalDataResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -690,6 +815,9 @@ type ServerInterface interface {
 
 	// (GET /{chatID})
 	GetPersonalData(w http.ResponseWriter, r *http.Request, chatID PChatID)
+
+	// (POST /{chatID})
+	InitPersonalData(w http.ResponseWriter, r *http.Request, chatID PChatID)
 
 	// (POST /{chatID}/state)
 	UpdateState(w http.ResponseWriter, r *http.Request, chatID PChatID, params UpdateStateParams)
@@ -766,6 +894,32 @@ func (siw *ServerInterfaceWrapper) GetPersonalData(w http.ResponseWriter, r *htt
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetPersonalData(w, r, chatID)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// InitPersonalData operation middleware
+func (siw *ServerInterfaceWrapper) InitPersonalData(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "chatID" -------------
+	var chatID PChatID
+
+	err = runtime.BindStyledParameter("simple", false, "chatID", chi.URLParam(r, "chatID"), &chatID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "chatID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.InitPersonalData(w, r, chatID)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -979,6 +1133,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/{chatID}", wrapper.GetPersonalData)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/{chatID}", wrapper.InitPersonalData)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/{chatID}/state", wrapper.UpdateState)

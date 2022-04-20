@@ -26,7 +26,10 @@ const (
 	applicationJSONContentType = "application/json"
 )
 
-func (s *Server) Setup(cfg *Config, l *log.Logger) {
+type SetupOption func(s *Server) error
+
+func NewServer(cfg *Config, l *log.Logger, opts ...SetupOption) (*Server, error) {
+	s := &Server{}
 	corsOptions := cors.Options{
 		// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
 		AllowedOrigins: []string{"https://*", "http://*"},
@@ -50,6 +53,14 @@ func (s *Server) Setup(cfg *Config, l *log.Logger) {
 		Addr:    cfg.Address,
 	}
 	s.log = l
+
+	for _, opt := range opts {
+		if err := opt(s); err != nil {
+			return nil, err
+		}
+	}
+
+	return s, nil
 }
 
 func (s *Server) Run() {
@@ -59,5 +70,12 @@ func (s *Server) Run() {
 		} else {
 			s.log.Error(err)
 		}
+	}
+}
+
+func SetupWithRepo(r repo.Repository) func(server *Server) error {
+	return func(s *Server) error {
+		s.db = r
+		return nil
 	}
 }

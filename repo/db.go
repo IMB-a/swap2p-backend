@@ -31,7 +31,8 @@ func (s *Service) GetPersonalData(ctx context.Context, chatID string) (*api.Pers
 	pd := api.PersonalData{}
 
 	q := `
-		select tu.state, a.address
+		select tu.state  as state,
+			   a.address as wallet_address
 		from telegram_user tu
 				 left join address a on tu.user_id = a.user_id
 		where tu.chat_id = $1`

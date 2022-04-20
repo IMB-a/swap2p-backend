@@ -4,7 +4,12 @@ info:
   description: Title
   version: 0.0.0
 servers:
-  - url: 'https'
+  - url: http://localhost{port}/{basePath}
+    variables:
+      basePath:
+        default: api
+      port:
+        default: :8000
 paths:
   /{chatID}:
     parameters:
@@ -16,6 +21,15 @@ paths:
           $ref: '#/components/responses/personalDataResp'
         404:
           $ref: '#/components/responses/chatNotFoundResp'
+        default:
+          $ref: '#/components/responses/errorResp'
+    post:
+      operationId: initPersonalData
+      responses:
+        200:
+          $ref: '#/components/responses/okResp'
+        default:
+          $ref: '#/components/responses/errorResp'
 
   /{chatID}/wallet:
     parameters:
@@ -132,8 +146,12 @@ components:
       properties:
         walletAddress:
           type: string
+          x-oapi-codegen-extra-tags:
+            db: wallet_address
         state:
           type: string
+          x-oapi-codegen-extra-tags:
+            db: state
         balance:
           $ref: '#/components/schemas/balance'
 
@@ -162,10 +180,18 @@ components:
           type: integer
           x-oapi-codegen-extra-tags:
             db: amount
+          x-go-type: uint64
         decimals:
           type: integer
           x-oapi-codegen-extra-tags:
             db: asset_decimals
+    error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
 
   responses:
     # 200
@@ -186,3 +212,9 @@ components:
     # 404
     chatNotFoundResp:
       description: ''
+    errorResp:
+      description: ''
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'

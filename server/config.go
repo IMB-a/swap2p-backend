@@ -1,6 +1,6 @@
 package server
 
 type Config struct {
-	Address  string
-	BasePath string
+	Address  string `yaml:"address"`
+	BasePath string `yaml:"base_path"`
 }

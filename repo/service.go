@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/IMB-a/swap2p-backend/api"
+	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
@@ -20,7 +21,7 @@ func NewService(cfg *Config) (*Service, error) {
 		return nil, errors.Wrap(err, "can't create connection string")
 	}
 
-	db, err := sqlx.Connect("postgres", connStr)
+	db, err := sqlx.Connect(cfg.Driver, connStr)
 
 	if err != nil {
 		return nil, errors.Wrapf(err, "can't connect to db")
@@ -34,4 +35,5 @@ type Repository interface {
 	GetPersonalData(ctx context.Context, chatID string) (*api.PersonalData, error)
 	UpsertPersonAddress(ctx context.Context, chatID, address string) error
 	UpdatePersonState(ctx context.Context, chatID, state string) error
+	UpsertPerson(ctx context.Context, chatID string) error
 }
