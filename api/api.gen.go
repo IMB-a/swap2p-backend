@@ -34,7 +34,7 @@ type PersonalData struct {
 // SingleBalance defines model for singleBalance.
 type SingleBalance struct {
 	Address  string `db:"asset_address" json:"address"`
-	Amount   uint64 `db:"amount" json:"amount"`
+	Amount   BigInt `db:"amount" json:"amount"`
 	Asset    string `db:"asset_name" json:"asset"`
 	Decimals int    `db:"asset_decimals" json:"decimals"`
 }
@@ -44,11 +44,11 @@ type Trade struct {
 	Closed    bool   `json:"closed"`
 	Id        int    `json:"id"`
 	XAddress  string `json:"xAddress"`
-	XAmount   uint64 `json:"xAmount"`
+	XAmount   BigInt `json:"xAmount"`
 	XAsset    string `json:"xAsset"`
 	XDecimals int    `json:"xDecimals"`
 	YAddress  string `json:"yAddress"`
-	YAmount   uint64 `json:"yAmount"`
+	YAmount   BigInt `json:"yAmount"`
 	YAsset    string `json:"yAsset"`
 	YDecimals int    `json:"yDecimals"`
 }

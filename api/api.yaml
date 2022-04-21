@@ -142,10 +142,10 @@ components:
           type: string
         xAmount:
           type: integer
-          x-go-type: uint64
+          x-go-type: BigInt
         yAmount:
           type: integer
-          x-go-type: uint64
+          x-go-type: BigInt
         closed:
           type: boolean
         xDecimals:
@@ -196,7 +196,7 @@ components:
           type: integer
           x-oapi-codegen-extra-tags:
             db: amount
-          x-go-type: uint64
+          x-go-type: BigInt
         decimals:
           type: integer
           x-oapi-codegen-extra-tags:
