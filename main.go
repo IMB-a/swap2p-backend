@@ -4,8 +4,8 @@ import (
 	"flag"
 	"os"
 
-	"github.com/IMB-a/swap2p-backend/repo"
-	"github.com/IMB-a/swap2p-backend/server"
+	"github.com/Pod-Box/swap2p-backend/repo"
+	"github.com/Pod-Box/swap2p-backend/server"
 	logger "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )

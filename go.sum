@@ -1,4 +1,6 @@
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
+github.com/IMB-a/swap2p-backend v0.0.0-20220421200300-485658f532aa h1:N4asGKG5vVO9LOnDrpu/e7xG5Tf+o5wXZd6Yiz5WhMc=
+github.com/IMB-a/swap2p-backend v0.0.0-20220421200300-485658f532aa/go.mod h1:Qv+tS40IDJTXfY0EDo+GgViZWPv39VVrbnbABP8M+VE=
 github.com/Masterminds/semver/v3 v3.1.1 h1:hLg3sBzpNErnxhQtUy/mmLR2I9foDujNK030IGemrRc=
 github.com/Masterminds/semver/v3 v3.1.1/go.mod h1:VPu/7SZ7ePZ3QOrcuXROw5FAcLl4a0cBrbBpGY/8hQs=
 github.com/cockroachdb/apd v1.1.0 h1:3LFP3629v+1aKXU5Q37mxmRxX/pIu1nijXydLShEq5I=

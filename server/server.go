@@ -5,8 +5,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/IMB-a/swap2p-backend/api"
-	"github.com/IMB-a/swap2p-backend/repo"
+	"github.com/Pod-Box/swap2p-backend/api"
+	"github.com/Pod-Box/swap2p-backend/repo"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/pkg/errors"

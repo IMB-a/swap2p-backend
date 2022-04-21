@@ -3,7 +3,7 @@ package repo
 import (
 	"context"
 
-	"github.com/IMB-a/swap2p-backend/api"
+	"github.com/Pod-Box/swap2p-backend/api"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"

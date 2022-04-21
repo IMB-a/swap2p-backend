@@ -1,4 +1,4 @@
-module github.com/IMB-a/swap2p-backend
+module github.com/Pod-Box/swap2p-backend
 
 go 1.18
 
@@ -16,6 +16,7 @@ require (
 )
 
 require (
+	github.com/IMB-a/swap2p-backend v0.0.0-20220421200300-485658f532aa // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.11.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect

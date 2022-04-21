@@ -4,7 +4,7 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/IMB-a/swap2p-backend/api"
+	"github.com/Pod-Box/swap2p-backend/api"
 	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/pkg/errors"
