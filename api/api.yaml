@@ -141,11 +141,9 @@ components:
         yAsset:
           type: string
         xAmount:
-          type: integer
-          x-go-type: BigInt
+          type: string
         yAmount:
-          type: integer
-          x-go-type: BigInt
+          type: string
         closed:
           type: boolean
         xDecimals:
@@ -193,10 +191,9 @@ components:
           x-oapi-codegen-extra-tags:
             db: asset_address
         amount:
-          type: integer
+          type: string
           x-oapi-codegen-extra-tags:
             db: amount
-          x-go-type: BigInt
         decimals:
           type: integer
           x-oapi-codegen-extra-tags:
