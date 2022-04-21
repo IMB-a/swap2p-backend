@@ -51,6 +51,17 @@ paths:
         200:
           $ref: '#/components/responses/okResp'
 
+  /{chatID}/trades:
+    parameters:
+      - $ref: '#/components/parameters/pChatID'
+    get:
+      operationId: getTradesByChatID
+      responses:
+        200:
+          $ref: '#/components/responses/tradesResp'
+        default:
+          $ref: '#/components/responses/errorResp'
+
   /trades:
     parameters:
       - $ref: '#/components/parameters/qOffset'
@@ -59,7 +70,8 @@ paths:
       operationId: getAllTrades
       responses:
         200:
-          $ref: '#/components/responses/allTradesResp'
+          $ref: '#/components/responses/tradesResp'
+
 
 components:
   parameters:
@@ -115,7 +127,8 @@ components:
         - xAmount
         - yAmount
         - closed
-        - expires
+        - xDecimals
+        - yDecimals
       properties:
         id:
           type: integer
@@ -129,13 +142,16 @@ components:
           type: string
         xAmount:
           type: integer
+          x-go-type: uint64
         yAmount:
           type: integer
+          x-go-type: uint64
         closed:
           type: boolean
-        expires:
+        xDecimals:
           type: integer
-          description: unix timestamp
+        yDecimals:
+          type: integer
 
     personalData:
       type: object
@@ -201,7 +217,7 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/personalData'
-    allTradesResp:
+    tradesResp:
       description: ''
       content:
         application/json:

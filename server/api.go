@@ -8,6 +8,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+func (s *Server) GetTradesByChatID(w http.ResponseWriter, r *http.Request, chatID api.PChatID) {
+	// TODO implement me
+	panic("implement me")
+}
+
 func (s *Server) InitPersonalData(w http.ResponseWriter, r *http.Request, chatID api.PChatID) {
 	ctx := r.Context()
 	err := s.db.UpsertPerson(ctx, string(chatID))

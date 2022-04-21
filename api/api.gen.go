@@ -41,17 +41,16 @@ type SingleBalance struct {
 
 // Trade defines model for trade.
 type Trade struct {
-	Closed bool `json:"closed"`
-
-	// unix timestamp
-	Expires  int    `json:"expires"`
-	Id       int    `json:"id"`
-	XAddress string `json:"xAddress"`
-	XAmount  int    `json:"xAmount"`
-	XAsset   string `json:"xAsset"`
-	YAddress string `json:"yAddress"`
-	YAmount  int    `json:"yAmount"`
-	YAsset   string `json:"yAsset"`
+	Closed    bool   `json:"closed"`
+	Id        int    `json:"id"`
+	XAddress  string `json:"xAddress"`
+	XAmount   uint64 `json:"xAmount"`
+	XAsset    string `json:"xAsset"`
+	XDecimals int    `json:"xDecimals"`
+	YAddress  string `json:"yAddress"`
+	YAmount   uint64 `json:"yAmount"`
+	YAsset    string `json:"yAsset"`
+	YDecimals int    `json:"yDecimals"`
 }
 
 // TradeList defines model for tradeList.
@@ -72,14 +71,14 @@ type QOffset int
 // QWalletAddress defines model for qWalletAddress.
 type QWalletAddress string
 
-// AllTradesResp defines model for allTradesResp.
-type AllTradesResp TradeList
-
 // ErrorResp defines model for errorResp.
 type ErrorResp Error
 
 // PersonalDataResp defines model for personalDataResp.
 type PersonalDataResp PersonalData
+
+// TradesResp defines model for tradesResp.
+type TradesResp TradeList
 
 // GetAllTradesParams defines parameters for GetAllTrades.
 type GetAllTradesParams struct {
@@ -182,6 +181,9 @@ type ClientInterface interface {
 	// UpdateState request
 	UpdateState(ctx context.Context, chatID PChatID, params *UpdateStateParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetTradesByChatID request
+	GetTradesByChatID(ctx context.Context, chatID PChatID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// AddWallet request
 	AddWallet(ctx context.Context, chatID PChatID, params *AddWalletParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
@@ -224,6 +226,18 @@ func (c *Client) InitPersonalData(ctx context.Context, chatID PChatID, reqEditor
 
 func (c *Client) UpdateState(ctx context.Context, chatID PChatID, params *UpdateStateParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateStateRequest(c.Server, chatID, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetTradesByChatID(ctx context.Context, chatID PChatID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetTradesByChatIDRequest(c.Server, chatID)
 	if err != nil {
 		return nil, err
 	}
@@ -427,6 +441,40 @@ func NewUpdateStateRequest(server string, chatID PChatID, params *UpdateStatePar
 	return req, nil
 }
 
+// NewGetTradesByChatIDRequest generates requests for GetTradesByChatID
+func NewGetTradesByChatIDRequest(server string, chatID PChatID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "chatID", runtime.ParamLocationPath, chatID)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/%s/trades", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewAddWalletRequest generates requests for AddWallet
 func NewAddWalletRequest(server string, chatID PChatID, params *AddWalletParams) (*http.Request, error) {
 	var err error
@@ -532,6 +580,9 @@ type ClientWithResponsesInterface interface {
 	// UpdateState request
 	UpdateStateWithResponse(ctx context.Context, chatID PChatID, params *UpdateStateParams, reqEditors ...RequestEditorFn) (*UpdateStateResponse, error)
 
+	// GetTradesByChatID request
+	GetTradesByChatIDWithResponse(ctx context.Context, chatID PChatID, reqEditors ...RequestEditorFn) (*GetTradesByChatIDResponse, error)
+
 	// AddWallet request
 	AddWalletWithResponse(ctx context.Context, chatID PChatID, params *AddWalletParams, reqEditors ...RequestEditorFn) (*AddWalletResponse, error)
 }
@@ -624,6 +675,29 @@ func (r UpdateStateResponse) StatusCode() int {
 	return 0
 }
 
+type GetTradesByChatIDResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *TradeList
+	JSONDefault  *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r GetTradesByChatIDResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetTradesByChatIDResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type AddWalletResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -679,6 +753,15 @@ func (c *ClientWithResponses) UpdateStateWithResponse(ctx context.Context, chatI
 		return nil, err
 	}
 	return ParseUpdateStateResponse(rsp)
+}
+
+// GetTradesByChatIDWithResponse request returning *GetTradesByChatIDResponse
+func (c *ClientWithResponses) GetTradesByChatIDWithResponse(ctx context.Context, chatID PChatID, reqEditors ...RequestEditorFn) (*GetTradesByChatIDResponse, error) {
+	rsp, err := c.GetTradesByChatID(ctx, chatID, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetTradesByChatIDResponse(rsp)
 }
 
 // AddWalletWithResponse request returning *AddWalletResponse
@@ -791,6 +874,39 @@ func ParseUpdateStateResponse(rsp *http.Response) (*UpdateStateResponse, error) 
 	return response, nil
 }
 
+// ParseGetTradesByChatIDResponse parses an HTTP response from a GetTradesByChatIDWithResponse call
+func ParseGetTradesByChatIDResponse(rsp *http.Response) (*GetTradesByChatIDResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetTradesByChatIDResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest TradeList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseAddWalletResponse parses an HTTP response from a AddWalletWithResponse call
 func ParseAddWalletResponse(rsp *http.Response) (*AddWalletResponse, error) {
 	bodyBytes, err := ioutil.ReadAll(rsp.Body)
@@ -821,6 +937,9 @@ type ServerInterface interface {
 
 	// (POST /{chatID}/state)
 	UpdateState(w http.ResponseWriter, r *http.Request, chatID PChatID, params UpdateStateParams)
+
+	// (GET /{chatID}/trades)
+	GetTradesByChatID(w http.ResponseWriter, r *http.Request, chatID PChatID)
 
 	// (POST /{chatID}/wallet)
 	AddWallet(w http.ResponseWriter, r *http.Request, chatID PChatID, params AddWalletParams)
@@ -963,6 +1082,32 @@ func (siw *ServerInterfaceWrapper) UpdateState(w http.ResponseWriter, r *http.Re
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateState(w, r, chatID, params)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetTradesByChatID operation middleware
+func (siw *ServerInterfaceWrapper) GetTradesByChatID(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "chatID" -------------
+	var chatID PChatID
+
+	err = runtime.BindStyledParameter("simple", false, "chatID", chi.URLParam(r, "chatID"), &chatID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "chatID", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTradesByChatID(w, r, chatID)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1139,6 +1284,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/{chatID}/state", wrapper.UpdateState)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/{chatID}/trades", wrapper.GetTradesByChatID)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/{chatID}/wallet", wrapper.AddWallet)
