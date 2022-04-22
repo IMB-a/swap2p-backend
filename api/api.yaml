@@ -132,24 +132,44 @@ components:
       properties:
         id:
           type: integer
+          x-oapi-codegen-extra-tags:
+            db: trade_id
         xAddress:
           type: string
+          x-oapi-codegen-extra-tags:
+            db: x_address
         yAddress:
           type: string
+          x-oapi-codegen-extra-tags:
+            db: y_address
         xAsset:
           type: string
+          x-oapi-codegen-extra-tags:
+            db: x_asset
         yAsset:
           type: string
+          x-oapi-codegen-extra-tags:
+            db: y_asset
         xAmount:
           type: string
+          x-oapi-codegen-extra-tags:
+            db: x_amount
         yAmount:
           type: string
+          x-oapi-codegen-extra-tags:
+            db: y_amount
         closed:
           type: boolean
+          x-oapi-codegen-extra-tags:
+            db: closed
         xDecimals:
           type: integer
+          x-oapi-codegen-extra-tags:
+            db: x_decimals
         yDecimals:
           type: integer
+          x-oapi-codegen-extra-tags:
+            db: y_decimals
 
     personalData:
       type: object

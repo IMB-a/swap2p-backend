@@ -41,16 +41,16 @@ type SingleBalance struct {
 
 // Trade defines model for trade.
 type Trade struct {
-	Closed    bool   `json:"closed"`
-	Id        int    `json:"id"`
-	XAddress  string `json:"xAddress"`
-	XAmount   string `json:"xAmount"`
-	XAsset    string `json:"xAsset"`
-	XDecimals int    `json:"xDecimals"`
-	YAddress  string `json:"yAddress"`
-	YAmount   string `json:"yAmount"`
-	YAsset    string `json:"yAsset"`
-	YDecimals int    `json:"yDecimals"`
+	Closed    bool   `db:"closed" json:"closed"`
+	Id        int    `db:"trade_id" json:"id"`
+	XAddress  string `db:"x_address" json:"xAddress"`
+	XAmount   string `db:"x_amount" json:"xAmount"`
+	XAsset    string `db:"x_asset" json:"xAsset"`
+	XDecimals int    `db:"x_decimals" json:"xDecimals"`
+	YAddress  string `db:"y_address" json:"yAddress"`
+	YAmount   string `db:"y_amount" json:"yAmount"`
+	YAsset    string `db:"y_asset" json:"yAsset"`
+	YDecimals int    `db:"y_decimals" json:"yDecimals"`
 }
 
 // TradeList defines model for tradeList.

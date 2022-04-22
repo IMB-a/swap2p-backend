@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/Pod-Box/swap2p-backend/api"
-	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
@@ -31,9 +30,21 @@ func NewService(cfg *Config) (*Service, error) {
 }
 
 type Repository interface {
-	GetTrades(ctx context.Context, offset, limit int) (api.TradeList, error)
+	UserRepository
+	TradeRepository
+}
+
+type UserRepository interface {
 	GetPersonalData(ctx context.Context, chatID string) (*api.PersonalData, error)
 	UpsertPersonAddress(ctx context.Context, chatID, address string) error
 	UpdatePersonState(ctx context.Context, chatID, state string) error
 	UpsertPerson(ctx context.Context, chatID string) error
+}
+
+type TradeRepository interface {
+	GetTrades(ctx context.Context, offset, limit int) (api.TradeList, error)
+	GetTradesByChatID(ctx context.Context, chatID string) (api.TradeList, error)
+	AddTrade(ctx context.Context, trade *api.Trade) error
+	TradeExists(ctx context.Context, tradeID int) (bool, error)
+	CloseTrade(ctx context.Context, tradeID int) error
 }
