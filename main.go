@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -49,7 +50,9 @@ func main() {
 			case worker.TradeEventTypeCreate:
 				err = r.AddTrade(context.Background(), &t.Trade)
 				if err != nil {
-					log.WithError(err).Error("can't add trade")
+					if !errors.Is(err, repo.TradeAlreadyExistsErr) {
+						log.WithError(err).Error("can't add trade")
+					}
 				}
 			case worker.TradeEventTypeAccept:
 				err = r.CloseTrade(context.Background(), t.Id)
@@ -57,7 +60,6 @@ func main() {
 					log.WithError(err).Error("can't close trade")
 				}
 			}
-			fmt.Println(t)
 		}
 		fmt.Println("!!!!!!!!!!!CLOSED!!!!!!!!!!!!")
 	}()

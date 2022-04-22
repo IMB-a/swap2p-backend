@@ -111,7 +111,8 @@ func (s *Service) Run(ctx context.Context) {
 							}
 						case "EscrowAccepted":
 							s.TradeChan <- TradeEvent{
-								Type: TradeEventTypeAccept,
+								Type:  TradeEventTypeAccept,
+								Trade: api.Trade{Id: int(data["escrowIndex"].(*big.Int).Int64())},
 							}
 						case "EscrowRejected":
 							s.TradeChan <- TradeEvent{
