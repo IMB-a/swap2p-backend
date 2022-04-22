@@ -19,8 +19,6 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/personalDataResp'
-        404:
-          $ref: '#/components/responses/chatNotFoundResp'
         default:
           $ref: '#/components/responses/errorResp'
     post:
@@ -304,6 +302,8 @@ components:
             $ref: '#/components/schemas/balance'
     okResp:
       description: ''
+    noResp:
+      description: ''
     # 404
     chatNotFoundResp:
       description: ''
@@ -312,4 +312,5 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/error'
+            oneOf:
+              - $ref: '#/components/schemas/error'

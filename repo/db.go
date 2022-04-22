@@ -180,6 +180,7 @@ func (s *Service) GetTrades(ctx context.Context, offset, limit int, tf *TradeFil
 			}
 		}
 	}
+	q += "\n order by t.trade_id"
 	if offset > 0 {
 		q += "\n offset " + strconv.Itoa(limit)
 	}

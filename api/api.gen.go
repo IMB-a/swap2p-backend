@@ -91,7 +91,7 @@ type AssetsResp AssetList
 type BalanceResp Balance
 
 // ErrorResp defines model for errorResp.
-type ErrorResp Error
+type ErrorResp interface{}
 
 // PersonalDataResp defines model for personalDataResp.
 type PersonalDataResp PersonalData
@@ -804,7 +804,7 @@ type GetPersonalDataResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *PersonalData
-	JSONDefault  *Error
+	JSONDefault  *interface{}
 }
 
 // Status returns HTTPResponse.Status
@@ -826,7 +826,7 @@ func (r GetPersonalDataResponse) StatusCode() int {
 type InitPersonalDataResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSONDefault  *Error
+	JSONDefault  *interface{}
 }
 
 // Status returns HTTPResponse.Status
@@ -870,7 +870,7 @@ type GetTradesByChatIDResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *TradeList
-	JSONDefault  *Error
+	JSONDefault  *interface{}
 }
 
 // Status returns HTTPResponse.Status
@@ -1082,7 +1082,7 @@ func ParseGetPersonalDataResponse(rsp *http.Response) (*GetPersonalDataResponse,
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
+		var dest interface{}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -1108,7 +1108,7 @@ func ParseInitPersonalDataResponse(rsp *http.Response) (*InitPersonalDataRespons
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
+		var dest interface{}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -1157,7 +1157,7 @@ func ParseGetTradesByChatIDResponse(rsp *http.Response) (*GetTradesByChatIDRespo
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
+		var dest interface{}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
