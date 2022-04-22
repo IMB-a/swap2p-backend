@@ -25,7 +25,7 @@ create table balance
     asset_address TEXT REFERENCES asset,
     user_id       UUID REFERENCES telegram_user,
     amount        INT NOT NULL DEFAULT 0,
-    primary key (user_id)
+    primary key (user_id, asset_address)
 );
 
 -- +goose Down

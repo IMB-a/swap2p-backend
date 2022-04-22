@@ -84,6 +84,9 @@ type QWalletAddress string
 // AssetsResp defines model for assetsResp.
 type AssetsResp AssetList
 
+// BalanceResp defines model for balanceResp.
+type BalanceResp Balance
+
 // ErrorResp defines model for errorResp.
 type ErrorResp Error
 
@@ -92,6 +95,11 @@ type PersonalDataResp PersonalData
 
 // TradesResp defines model for tradesResp.
 type TradesResp TradeList
+
+// GetAssetsByAddressParams defines parameters for GetAssetsByAddress.
+type GetAssetsByAddressParams struct {
+	Wallet QWalletAddress `json:"wallet"`
+}
 
 // GetAllTradesParams defines parameters for GetAllTrades.
 type GetAllTradesParams struct {
@@ -185,6 +193,9 @@ type ClientInterface interface {
 	// GetAllAssets request
 	GetAllAssets(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetAssetsByAddress request
+	GetAssetsByAddress(ctx context.Context, params *GetAssetsByAddressParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetAllTrades request
 	GetAllTrades(ctx context.Context, params *GetAllTradesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -206,6 +217,18 @@ type ClientInterface interface {
 
 func (c *Client) GetAllAssets(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetAllAssetsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetAssetsByAddress(ctx context.Context, params *GetAssetsByAddressParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAssetsByAddressRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -306,6 +329,49 @@ func NewGetAllAssetsRequest(server string) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetAssetsByAddressRequest generates requests for GetAssetsByAddress
+func NewGetAssetsByAddressRequest(server string, params *GetAssetsByAddressParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/balance")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	queryValues := queryURL.Query()
+
+	if queryFrag, err := runtime.StyleParamWithLocation("form", true, "wallet", runtime.ParamLocationQuery, params.Wallet); err != nil {
+		return nil, err
+	} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+		return nil, err
+	} else {
+		for k, v := range parsed {
+			for _, v2 := range v {
+				queryValues.Add(k, v2)
+			}
+		}
+	}
+
+	queryURL.RawQuery = queryValues.Encode()
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
 	if err != nil {
@@ -626,6 +692,9 @@ type ClientWithResponsesInterface interface {
 	// GetAllAssets request
 	GetAllAssetsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetAllAssetsResponse, error)
 
+	// GetAssetsByAddress request
+	GetAssetsByAddressWithResponse(ctx context.Context, params *GetAssetsByAddressParams, reqEditors ...RequestEditorFn) (*GetAssetsByAddressResponse, error)
+
 	// GetAllTrades request
 	GetAllTradesWithResponse(ctx context.Context, params *GetAllTradesParams, reqEditors ...RequestEditorFn) (*GetAllTradesResponse, error)
 
@@ -661,6 +730,28 @@ func (r GetAllAssetsResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetAllAssetsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetAssetsByAddressResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Balance
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAssetsByAddressResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAssetsByAddressResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -808,6 +899,15 @@ func (c *ClientWithResponses) GetAllAssetsWithResponse(ctx context.Context, reqE
 	return ParseGetAllAssetsResponse(rsp)
 }
 
+// GetAssetsByAddressWithResponse request returning *GetAssetsByAddressResponse
+func (c *ClientWithResponses) GetAssetsByAddressWithResponse(ctx context.Context, params *GetAssetsByAddressParams, reqEditors ...RequestEditorFn) (*GetAssetsByAddressResponse, error) {
+	rsp, err := c.GetAssetsByAddress(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAssetsByAddressResponse(rsp)
+}
+
 // GetAllTradesWithResponse request returning *GetAllTradesResponse
 func (c *ClientWithResponses) GetAllTradesWithResponse(ctx context.Context, params *GetAllTradesParams, reqEditors ...RequestEditorFn) (*GetAllTradesResponse, error) {
 	rsp, err := c.GetAllTrades(ctx, params, reqEditors...)
@@ -878,6 +978,32 @@ func ParseGetAllAssetsResponse(rsp *http.Response) (*GetAllAssetsResponse, error
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest AssetList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetAssetsByAddressResponse parses an HTTP response from a GetAssetsByAddressWithResponse call
+func ParseGetAssetsByAddressResponse(rsp *http.Response) (*GetAssetsByAddressResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAssetsByAddressResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Balance
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -1044,6 +1170,9 @@ type ServerInterface interface {
 	// (GET /assets)
 	GetAllAssets(w http.ResponseWriter, r *http.Request)
 
+	// (GET /balance)
+	GetAssetsByAddress(w http.ResponseWriter, r *http.Request, params GetAssetsByAddressParams)
+
 	// (GET /trades)
 	GetAllTrades(w http.ResponseWriter, r *http.Request, params GetAllTradesParams)
 
@@ -1078,6 +1207,40 @@ func (siw *ServerInterfaceWrapper) GetAllAssets(w http.ResponseWriter, r *http.R
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetAllAssets(w, r)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// GetAssetsByAddress operation middleware
+func (siw *ServerInterfaceWrapper) GetAssetsByAddress(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetAssetsByAddressParams
+
+	// ------------- Required query parameter "wallet" -------------
+	if paramValue := r.URL.Query().Get("wallet"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "wallet"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "wallet", r.URL.Query(), &params.Wallet)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "wallet", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAssetsByAddress(w, r, params)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1408,6 +1571,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/assets", wrapper.GetAllAssets)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/balance", wrapper.GetAssetsByAddress)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/trades", wrapper.GetAllTrades)

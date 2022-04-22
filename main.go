@@ -6,11 +6,16 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/Pod-Box/swap2p-backend/repo"
 	"github.com/Pod-Box/swap2p-backend/server"
 	"github.com/Pod-Box/swap2p-backend/worker"
+	"github.com/Pod-Box/swap2p-backend/worker/assets"
 	logger "github.com/sirupsen/logrus"
+	"github.com/umbracle/ethgo"
+	"github.com/umbracle/ethgo/contract/builtin/erc20"
+	"github.com/umbracle/ethgo/jsonrpc"
 	"gopkg.in/yaml.v3"
 )
 
@@ -62,6 +67,39 @@ func main() {
 			}
 		}
 		fmt.Println("!!!!!!!!!!!CLOSED!!!!!!!!!!!!")
+	}()
+
+	go func() {
+		ctx := context.Background()
+		ass := assets.NewService(r, time.Second*1, log)
+
+		c, err := jsonrpc.NewClient(cfg.Worker.JSONRPCClient)
+		if err != nil {
+			log.WithError(err).Error()
+			return
+		}
+
+		for {
+			time.Sleep(time.Second * 1)
+			aa, err := r.GetAssets(ctx)
+			if err != nil {
+				log.WithError(err).Error("get assets")
+				continue
+			}
+			uu, err := r.GetAllUsers(ctx)
+			if err != nil {
+				log.WithError(err).Error("get all users")
+				continue
+			}
+			log.Println(aa)
+			for _, a := range aa {
+				e20 := erc20.NewERC20(ethgo.HexToAddress(a.Address), c)
+				time.Sleep(time.Second * 1)
+				for _, u := range uu {
+					ass.UpdateBalance(ctx, e20, ethgo.HexToAddress(u.WalletAddress))
+				}
+			}
+		}
 	}()
 
 	srv.Run()

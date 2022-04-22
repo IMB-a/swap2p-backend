@@ -79,6 +79,15 @@ paths:
         200:
           $ref: '#/components/responses/assetsResp'
 
+  /balance:
+    parameters:
+      - $ref: '#/components/parameters/qWalletAddress'
+    get:
+      operationId: getAssetsByAddress
+      responses:
+        200:
+          $ref: '#/components/responses/balanceResp'
+
 
 components:
   parameters:
@@ -278,6 +287,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/assetList'
+    balanceResp:
+      description: ''
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/balance'
     okResp:
       description: ''
     # 404

@@ -10,6 +10,16 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func (s *Server) GetAssetsByAddress(w http.ResponseWriter, r *http.Request, params api.GetAssetsByAddressParams) {
+	ctx := r.Context()
+	al, err := s.db.GetBalancesByAddress(ctx, string(params.Wallet))
+	if err != nil {
+		respond(w, r, s.log, errors.Wrap(err, "assets by address"))
+		return
+	}
+	respond(w, r, s.log, al)
+}
+
 func (s *Server) GetAllAssets(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	al, err := s.db.GetAssets(ctx)
@@ -32,6 +42,7 @@ func (s *Server) InitPersonalData(w http.ResponseWriter, r *http.Request, chatID
 		respond(w, r, s.log, errors.Wrap(err, "upsert person"))
 		return
 	}
+	respond(w, r, s.log, []byte("{}"))
 }
 
 func (s Server) GetAllTrades(w http.ResponseWriter, r *http.Request, params api.GetAllTradesParams) {

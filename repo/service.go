@@ -4,11 +4,13 @@ import (
 	"context"
 
 	"github.com/Pod-Box/swap2p-backend/api"
+	"github.com/Pod-Box/swap2p-backend/worker/assets"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
 
 var _ Repository = &Service{}
+var _ assets.BalanceUpdater = &Service{}
 
 type Service struct {
 	db *sqlx.DB
@@ -33,6 +35,7 @@ type Repository interface {
 	UserRepository
 	TradeRepository
 	AssetRepository
+	BalanceRepository
 }
 
 type UserRepository interface {
@@ -40,6 +43,7 @@ type UserRepository interface {
 	UpsertPersonAddress(ctx context.Context, chatID, address string) error
 	UpdatePersonState(ctx context.Context, chatID, state string) error
 	UpsertPerson(ctx context.Context, chatID string) error
+	GetAllUsers(ctx context.Context) ([]api.PersonalData, error)
 }
 
 type TradeRepository interface {
@@ -52,4 +56,9 @@ type TradeRepository interface {
 
 type AssetRepository interface {
 	GetAssets(ctx context.Context) (api.AssetList, error)
+}
+
+type BalanceRepository interface {
+	GetBalancesByAddress(ctx context.Context, address string) (api.Balance, error)
+	GetBalancesByChatID(ctx context.Context, chatID string) (api.Balance, error)
 }

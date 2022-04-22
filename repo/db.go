@@ -11,6 +11,50 @@ import (
 	"github.com/pkg/errors"
 )
 
+func (s *Service) GetAllUsers(ctx context.Context) ([]api.PersonalData, error) {
+	pd := make([]api.PersonalData, 0)
+
+	q := `
+		select tu.state  	as state,
+			   a.address	as wallet_address
+		from telegram_user tu
+				 left join address a on tu.user_id = a.user_id
+		where a.address is not null`
+
+	err := s.db.SelectContext(ctx, &pd, q)
+	if err != nil {
+		return nil, errors.Wrap(err, "select all personal data")
+	}
+
+	return pd, nil
+}
+
+func (s *Service) UpdateBalance(ctx context.Context, assetAddress, walletAddress string, balance int64) error {
+	tx, err := s.db.Beginx()
+	if err != nil {
+		return err
+	}
+
+	q := `delete from balance where asset_address = $1 and user_id = (select user_id from address where lower(address) = lower($2))`
+	_, err = tx.ExecContext(ctx, q, assetAddress, walletAddress)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	q = `insert into balance (asset_address, user_id, amount) VALUES ($1, (select user_id from address where lower(address) = lower($2)), $3)`
+	_, err = tx.ExecContext(ctx, q, assetAddress, walletAddress, balance)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	return nil
+}
+
 func (s *Service) GetAssets(ctx context.Context) (api.AssetList, error) {
 	q := `
 		select address  as asset_address,
@@ -149,14 +193,14 @@ func (s *Service) GetPersonalData(ctx context.Context, chatID string) (*api.Pers
 			   coalesce(a.address, '') 	as wallet_address
 		from telegram_user tu
 				 left join address a on tu.user_id = a.user_id
-		where tu.chat_id = $1`
+		where lower(tu.chat_id) = lower($1)`
 
 	err := s.db.Get(&pd, q, chatID)
 	if err != nil {
 		return nil, errors.Wrap(err, "select personal data")
 	}
 
-	bb, err := s.GetBalances(ctx, chatID)
+	bb, err := s.GetBalancesByChatID(ctx, chatID)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			return nil, err
@@ -169,7 +213,7 @@ func (s *Service) GetPersonalData(ctx context.Context, chatID string) (*api.Pers
 	return &pd, nil
 }
 
-func (s *Service) GetBalances(ctx context.Context, chatID string) (api.Balance, error) {
+func (s *Service) GetBalancesByChatID(ctx context.Context, chatID string) (api.Balance, error) {
 	bb := api.Balance{}
 
 	q := `
@@ -180,11 +224,33 @@ func (s *Service) GetBalances(ctx context.Context, chatID string) (api.Balance, 
 		from balance b
 				 join telegram_user tu on b.user_id = tu.user_id
 				 join asset a on a.address = b.asset_address
-		where tu.chat_id = $1`
+		where lower(tu.chat_id) = lower($1)`
 
 	err := s.db.SelectContext(ctx, &bb, q, chatID)
 	if err != nil {
-		return nil, errors.Wrap(err, "select balance")
+		return nil, errors.Wrap(err, "select balance by chat id")
+	}
+
+	return bb, err
+}
+
+func (s *Service) GetBalancesByAddress(ctx context.Context, address string) (api.Balance, error) {
+	bb := api.Balance{}
+
+	q := `
+		select a.ticker   as asset_name,
+			   a.address  as asset_address,
+			   b.amount   as amount,
+			   a.decimals as asset_decimals
+		from balance b
+				 join telegram_user tu on b.user_id = tu.user_id
+				 join asset a on a.address = b.asset_address
+				 join address ad on ad.user_id = tu.user_id
+		where lower(ad.address) = lower($1)`
+
+	err := s.db.SelectContext(ctx, &bb, q, address)
+	if err != nil {
+		return nil, errors.Wrap(err, "select balance by address")
 	}
 
 	return bb, err
@@ -223,7 +289,7 @@ func (s *Service) UpsertPersonAddress(ctx context.Context, chatID, address strin
 }
 
 func (s *Service) UpdatePersonState(ctx context.Context, chatID, state string) error {
-	q := `update telegram_user set state = $2 where chat_id = $1`
+	q := `update telegram_user set state = $2 where lower(chat_id) = lower($1)`
 
 	_, err := s.db.ExecContext(ctx, q, chatID, state)
 	if err != nil {
