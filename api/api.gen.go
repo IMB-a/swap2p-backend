@@ -78,6 +78,9 @@ type QLimit int
 // QOffset defines model for qOffset.
 type QOffset int
 
+// QTradeClosed defines model for qTradeClosed.
+type QTradeClosed bool
+
 // QWalletAddress defines model for qWalletAddress.
 type QWalletAddress string
 
@@ -103,8 +106,9 @@ type GetAssetsByAddressParams struct {
 
 // GetAllTradesParams defines parameters for GetAllTrades.
 type GetAllTradesParams struct {
-	Offset *QOffset `json:"offset,omitempty"`
-	Limit  *QLimit  `json:"limit,omitempty"`
+	Offset      *QOffset      `json:"offset,omitempty"`
+	Limit       *QLimit       `json:"limit,omitempty"`
+	TradeClosed *QTradeClosed `json:"tradeClosed,omitempty"`
 }
 
 // UpdateStateParams defines parameters for UpdateState.
@@ -421,6 +425,22 @@ func NewGetAllTradesRequest(server string, params *GetAllTradesParams) (*http.Re
 	if params.Limit != nil {
 
 		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+	}
+
+	if params.TradeClosed != nil {
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "tradeClosed", runtime.ParamLocationQuery, *params.TradeClosed); err != nil {
 			return nil, err
 		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 			return nil, err
@@ -1278,6 +1298,17 @@ func (siw *ServerInterfaceWrapper) GetAllTrades(w http.ResponseWriter, r *http.R
 	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "tradeClosed" -------------
+	if paramValue := r.URL.Query().Get("tradeClosed"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "tradeClosed", r.URL.Query(), &params.TradeClosed)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tradeClosed", Err: err})
 		return
 	}
 

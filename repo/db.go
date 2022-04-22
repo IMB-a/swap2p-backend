@@ -71,16 +71,16 @@ func (s *Service) GetAssets(ctx context.Context) (api.AssetList, error) {
 	return al, nil
 }
 
-func (s *Service) CloseTrade(ctx context.Context, tradeID int) error {
-	q := `update trade set closed = true where trade_id = $1`
+func (s *Service) CloseTrade(ctx context.Context, tradeID int, yAddress string) error {
+	q := `update trade set closed = true, y_address = $2 where trade_id = $1`
 
 	if exists, err := s.TradeExists(ctx, tradeID); err != nil {
 		return err
 	} else if !exists {
-		q = `insert into trade (trade_id, closed) VALUES ($1,true)`
+		q = `insert into trade (trade_id, y_address, closed) VALUES ($1, $2, true)`
 	}
 
-	_, err := s.db.ExecContext(ctx, q, tradeID)
+	_, err := s.db.ExecContext(ctx, q, tradeID, yAddress)
 	if err != nil {
 		return errors.Wrap(err, "close trade")
 	}
@@ -152,7 +152,7 @@ func (s *Service) GetTradesByChatID(ctx context.Context, chatID string) (api.Tra
 	return tl, nil
 }
 
-func (s *Service) GetTrades(ctx context.Context, offset, limit int) (api.TradeList, error) {
+func (s *Service) GetTrades(ctx context.Context, offset, limit int, tf *TradeFilter) (api.TradeList, error) {
 	tl := api.TradeList{}
 
 	q := `select distinct t.trade_id                as trade_id,
@@ -171,6 +171,15 @@ func (s *Service) GetTrades(ctx context.Context, offset, limit int) (api.TradeLi
 				 left join asset xa on t.x_asset = xa.address
 				 left join asset ya on t.y_asset = xa.address`
 
+	if tf != nil {
+		if tf.Closed != nil {
+			if *tf.Closed {
+				q += "\n where closed"
+			} else {
+				q += "\n where not closed"
+			}
+		}
+	}
 	if offset > 0 {
 		q += "\n offset " + strconv.Itoa(limit)
 	}

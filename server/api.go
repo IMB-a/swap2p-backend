@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Pod-Box/swap2p-backend/api"
+	"github.com/Pod-Box/swap2p-backend/repo"
 	"github.com/go-chi/render"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -56,7 +57,7 @@ func (s Server) GetAllTrades(w http.ResponseWriter, r *http.Request, params api.
 		limit = int(*params.Limit)
 	}
 
-	pd, err := s.db.GetTrades(ctx, offset, limit)
+	pd, err := s.db.GetTrades(ctx, offset, limit, &repo.TradeFilter{Closed: params.TradeClosed.Bool()})
 	if err != nil {
 		respond(w, r, s.log, err)
 		return

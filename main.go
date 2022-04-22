@@ -60,7 +60,7 @@ func main() {
 					}
 				}
 			case worker.TradeEventTypeAccept:
-				err = r.CloseTrade(context.Background(), t.Id)
+				err = r.CloseTrade(context.Background(), t.Id, t.Trade.YAddress)
 				if err != nil {
 					log.WithError(err).Error("can't close trade")
 				}
@@ -80,7 +80,7 @@ func main() {
 		}
 
 		for {
-			time.Sleep(time.Second * 1)
+			time.Sleep(time.Second * 100)
 			aa, err := r.GetAssets(ctx)
 			if err != nil {
 				log.WithError(err).Error("get assets")
@@ -91,7 +91,6 @@ func main() {
 				log.WithError(err).Error("get all users")
 				continue
 			}
-			log.Println(aa)
 			for _, a := range aa {
 				e20 := erc20.NewERC20(ethgo.HexToAddress(a.Address), c)
 				time.Sleep(time.Second * 1)

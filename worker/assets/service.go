@@ -31,7 +31,9 @@ func (s *Service) UpdateBalance(ctx context.Context, e *erc20.ERC20, aa ...ethgo
 		time.Sleep(s.freq)
 		b, err := e.BalanceOf(a, ethgo.Latest)
 		if err != nil {
-			s.log.WithError(err).Error("get balance")
+			if err.Error() != "empty response" {
+				s.log.WithError(err).Error("get balance")
+			}
 			continue
 		}
 		if err = s.bu.UpdateBalance(ctx, e.Contract().Addr().String(), a.String(), b.Int64()); err != nil {

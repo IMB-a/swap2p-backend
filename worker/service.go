@@ -88,6 +88,9 @@ func (s *Service) Run(ctx context.Context) {
 			for _, e := range evt.Added {
 				for _, t := range e.Topics {
 					if v, ok := s.idEvent[t.String()]; ok {
+						if e.Data == nil {
+							continue
+						}
 						dataI, err := v.Inputs.Decode(e.Data)
 						if err != nil {
 							s.ErrChan <- err
@@ -111,8 +114,10 @@ func (s *Service) Run(ctx context.Context) {
 							}
 						case "EscrowAccepted":
 							s.TradeChan <- TradeEvent{
-								Type:  TradeEventTypeAccept,
-								Trade: api.Trade{Id: int(data["escrowIndex"].(*big.Int).Int64())},
+								Type: TradeEventTypeAccept,
+								Trade: api.Trade{Id: int(data["escrowIndex"].(*big.Int).Int64()),
+									YAddress: data["yOwner"].(ethgo.Address).String(),
+								},
 							}
 						case "EscrowRejected":
 							s.TradeChan <- TradeEvent{
