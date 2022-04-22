@@ -11,6 +11,22 @@ import (
 	"github.com/pkg/errors"
 )
 
+func (s *Service) GetAssets(ctx context.Context) (api.AssetList, error) {
+	q := `
+		select address  as asset_address,
+			   ticker   as asset_ticker,
+			   decimals as asset_decimals
+		from asset`
+
+	al := api.AssetList{}
+	err := s.db.SelectContext(ctx, &al, q)
+	if err != nil {
+		return nil, errors.Wrap(err, "get assets")
+	}
+
+	return al, nil
+}
+
 func (s *Service) CloseTrade(ctx context.Context, tradeID int) error {
 	q := `update trade set closed = true where trade_id = $1`
 

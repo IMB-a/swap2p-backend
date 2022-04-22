@@ -16,6 +16,16 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// Asset defines model for asset.
+type Asset struct {
+	Address  string `db:"asset_address" json:"address"`
+	Decimals int    `db:"asset_decimals" json:"decimals"`
+	Ticker   string `db:"asset_ticker" json:"ticker"`
+}
+
+// AssetList defines model for assetList.
+type AssetList []Asset
+
 // Balance defines model for balance.
 type Balance []SingleBalance
 
@@ -70,6 +80,9 @@ type QOffset int
 
 // QWalletAddress defines model for qWalletAddress.
 type QWalletAddress string
+
+// AssetsResp defines model for assetsResp.
+type AssetsResp AssetList
 
 // ErrorResp defines model for errorResp.
 type ErrorResp Error
@@ -169,6 +182,9 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// GetAllAssets request
+	GetAllAssets(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetAllTrades request
 	GetAllTrades(ctx context.Context, params *GetAllTradesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -186,6 +202,18 @@ type ClientInterface interface {
 
 	// AddWallet request
 	AddWallet(ctx context.Context, chatID PChatID, params *AddWalletParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+func (c *Client) GetAllAssets(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAllAssetsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 func (c *Client) GetAllTrades(ctx context.Context, params *GetAllTradesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -258,6 +286,33 @@ func (c *Client) AddWallet(ctx context.Context, chatID PChatID, params *AddWalle
 		return nil, err
 	}
 	return c.Client.Do(req)
+}
+
+// NewGetAllAssetsRequest generates requests for GetAllAssets
+func NewGetAllAssetsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/assets")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 // NewGetAllTradesRequest generates requests for GetAllTrades
@@ -568,6 +623,9 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// GetAllAssets request
+	GetAllAssetsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetAllAssetsResponse, error)
+
 	// GetAllTrades request
 	GetAllTradesWithResponse(ctx context.Context, params *GetAllTradesParams, reqEditors ...RequestEditorFn) (*GetAllTradesResponse, error)
 
@@ -585,6 +643,28 @@ type ClientWithResponsesInterface interface {
 
 	// AddWallet request
 	AddWalletWithResponse(ctx context.Context, chatID PChatID, params *AddWalletParams, reqEditors ...RequestEditorFn) (*AddWalletResponse, error)
+}
+
+type GetAllAssetsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AssetList
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAllAssetsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAllAssetsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
 }
 
 type GetAllTradesResponse struct {
@@ -719,6 +799,15 @@ func (r AddWalletResponse) StatusCode() int {
 	return 0
 }
 
+// GetAllAssetsWithResponse request returning *GetAllAssetsResponse
+func (c *ClientWithResponses) GetAllAssetsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetAllAssetsResponse, error) {
+	rsp, err := c.GetAllAssets(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAllAssetsResponse(rsp)
+}
+
 // GetAllTradesWithResponse request returning *GetAllTradesResponse
 func (c *ClientWithResponses) GetAllTradesWithResponse(ctx context.Context, params *GetAllTradesParams, reqEditors ...RequestEditorFn) (*GetAllTradesResponse, error) {
 	rsp, err := c.GetAllTrades(ctx, params, reqEditors...)
@@ -771,6 +860,32 @@ func (c *ClientWithResponses) AddWalletWithResponse(ctx context.Context, chatID 
 		return nil, err
 	}
 	return ParseAddWalletResponse(rsp)
+}
+
+// ParseGetAllAssetsResponse parses an HTTP response from a GetAllAssetsWithResponse call
+func ParseGetAllAssetsResponse(rsp *http.Response) (*GetAllAssetsResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAllAssetsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AssetList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
 }
 
 // ParseGetAllTradesResponse parses an HTTP response from a GetAllTradesWithResponse call
@@ -926,6 +1041,9 @@ func ParseAddWalletResponse(rsp *http.Response) (*AddWalletResponse, error) {
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
+	// (GET /assets)
+	GetAllAssets(w http.ResponseWriter, r *http.Request)
+
 	// (GET /trades)
 	GetAllTrades(w http.ResponseWriter, r *http.Request, params GetAllTradesParams)
 
@@ -953,6 +1071,21 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.HandlerFunc) http.HandlerFunc
+
+// GetAllAssets operation middleware
+func (siw *ServerInterfaceWrapper) GetAllAssets(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAllAssets(w, r)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
 
 // GetAllTrades operation middleware
 func (siw *ServerInterfaceWrapper) GetAllTrades(w http.ResponseWriter, r *http.Request) {
@@ -1273,6 +1406,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
 	}
 
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/assets", wrapper.GetAllAssets)
+	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/trades", wrapper.GetAllTrades)
 	})

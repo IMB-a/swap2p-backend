@@ -72,6 +72,13 @@ paths:
         200:
           $ref: '#/components/responses/tradesResp'
 
+  /assets:
+    get:
+      operationId: getAllAssets
+      responses:
+        200:
+          $ref: '#/components/responses/assetsResp'
+
 
 components:
   parameters:
@@ -111,6 +118,31 @@ components:
 
 
   schemas:
+    assetList:
+      type: array
+      items:
+        $ref: '#/components/schemas/asset'
+
+    asset:
+      type: object
+      required:
+        - address
+        - ticker
+        - decimals
+      properties:
+        address:
+          type: string
+          x-oapi-codegen-extra-tags:
+            db: asset_address
+        ticker:
+          type: string
+          x-oapi-codegen-extra-tags:
+            db: asset_ticker
+        decimals:
+          type: integer
+          x-oapi-codegen-extra-tags:
+            db: asset_decimals
+
     tradeList:
       type: array
       items:
@@ -240,6 +272,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/tradeList'
+    assetsResp:
+      description: ''
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/assetList'
     okResp:
       description: ''
     # 404

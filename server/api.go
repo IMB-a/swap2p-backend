@@ -10,6 +10,16 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func (s *Server) GetAllAssets(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	al, err := s.db.GetAssets(ctx)
+	if err != nil {
+		respond(w, r, s.log, errors.Wrap(err, "assets"))
+		return
+	}
+	respond(w, r, s.log, al)
+}
+
 func (s *Server) GetTradesByChatID(w http.ResponseWriter, r *http.Request, chatID api.PChatID) {
 	// TODO implement me
 	panic("implement me")

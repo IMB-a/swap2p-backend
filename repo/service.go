@@ -32,6 +32,7 @@ func NewService(cfg *Config) (*Service, error) {
 type Repository interface {
 	UserRepository
 	TradeRepository
+	AssetRepository
 }
 
 type UserRepository interface {
@@ -47,4 +48,8 @@ type TradeRepository interface {
 	AddTrade(ctx context.Context, trade *api.Trade) error
 	TradeExists(ctx context.Context, tradeID int) (bool, error)
 	CloseTrade(ctx context.Context, tradeID int) error
+}
+
+type AssetRepository interface {
+	GetAssets(ctx context.Context) (api.AssetList, error)
 }
