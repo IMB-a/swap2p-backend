@@ -16,6 +16,17 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// Defines values for TradeType.
+const (
+	TradeTypeN2020 TradeType = "20_20"
+
+	TradeTypeN20721 TradeType = "20_721"
+
+	TradeTypeN72120 TradeType = "721_20"
+
+	TradeTypeN721721 TradeType = "721_721"
+)
+
 // Asset defines model for asset.
 type Asset struct {
 	Address        string `db:"asset_address" json:"address"`
@@ -60,24 +71,24 @@ type SingleBalance struct {
 
 // Trade defines model for trade.
 type Trade struct {
-	Closed    bool   `db:"closed" json:"closed"`
-	Id        int    `db:"trade_id" json:"id"`
-	XAddress  string `db:"x_address" json:"xAddress"`
-	XAmount   string `db:"x_amount" json:"xAmount"`
-	XAsset    string `db:"x_asset" json:"xAsset"`
-	XDecimals int    `db:"x_decimals" json:"xDecimals"`
-	XNFT      string `db:"x_nft_asset" json:"xNFT"`
-	XNFTIndex int    `db:"x_nft_index" json:"xNFTIndex"`
-	YAddress  string `db:"y_address" json:"yAddress"`
-	YAmount   string `db:"y_amount" json:"yAmount"`
-	YAsset    string `db:"y_asset" json:"yAsset"`
-	YDecimals int    `db:"y_decimals" json:"yDecimals"`
-	YNFT      string `db:"y_nft_asset" json:"yNFT"`
-	YNFTIndex int    `db:"y_nft_index" json:"yNFTIndex"`
+	Closed    bool      `db:"closed" json:"closed"`
+	Id        int       `db:"trade_id" json:"id"`
+	Type      TradeType `db:"trade_type" json:"type"`
+	XAddress  string    `db:"x_address" json:"xAddress"`
+	XAmount   string    `db:"x_amount" json:"xAmount"`
+	XAsset    string    `db:"x_asset" json:"xAsset"`
+	XDecimals int       `db:"x_decimals" json:"xDecimals"`
+	YAddress  string    `db:"y_address" json:"yAddress"`
+	YAmount   string    `db:"y_amount" json:"yAmount"`
+	YAsset    string    `db:"y_asset" json:"yAsset"`
+	YDecimals int       `db:"y_decimals" json:"yDecimals"`
 }
 
 // TradeList defines model for tradeList.
 type TradeList []Trade
+
+// TradeType defines model for tradeType.
+type TradeType string
 
 // PChatID defines model for pChatID.
 type PChatID string

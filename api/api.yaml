@@ -147,6 +147,16 @@ components:
 
 
   schemas:
+    tradeType:
+      type: string
+      x-oapi-codegen-extra-tags:
+        db: trade_type
+      enum:
+        - "20_20"
+        - "20_721"
+        - "721_20"
+        - "721_721"
+
     pagination:
       type: object
       required:
@@ -210,10 +220,7 @@ components:
         - closed
         - xDecimals
         - yDecimals
-        - xNFT
-        - yNFT
-        - xNFTIndex
-        - yNFTIndex
+        - type
       properties:
         id:
           type: integer
@@ -255,22 +262,8 @@ components:
           type: integer
           x-oapi-codegen-extra-tags:
             db: y_decimals
-        xNFT:
-          type: string
-          x-oapi-codegen-extra-tags:
-            db: x_nft_asset
-        yNFT:
-          type: string
-          x-oapi-codegen-extra-tags:
-            db: y_nft_asset
-        xNFTIndex:
-          type: integer
-          x-oapi-codegen-extra-tags:
-            db: x_nft_index
-        yNFTIndex:
-          type: integer
-          x-oapi-codegen-extra-tags:
-            db: y_nft_index
+        type:
+          $ref: '#/components/schemas/tradeType'
 
     personalData:
       type: object

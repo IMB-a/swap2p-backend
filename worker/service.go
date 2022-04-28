@@ -140,30 +140,29 @@ func (s *Service) Run(ctx context.Context) {
 								Id:       int(id.Int64()),
 								XAmount:  "0",
 								YAmount:  "0",
+								XAsset:   data["xTokenContractAddr"].(ethgo.Address).String(),
+								YAsset:   data["yTokenContractAddr"].(ethgo.Address).String(),
 								XAddress: data["xOwner"].(ethgo.Address).String(),
 								YAddress: data["yOwner"].(ethgo.Address).String(),
 							}
 							switch e.Address {
 							case s.e20e20C:
+								trade.Type = api.TradeTypeN2020
 								trade.XAmount = data["xAmount"].(*big.Int).String()
 								trade.YAmount = data["yAmount"].(*big.Int).String()
 								trade.YAsset = data["yTokenContractAddr"].(ethgo.Address).String()
 								trade.XAsset = data["xTokenContractAddr"].(ethgo.Address).String()
 							case s.e20e721C:
+								trade.Type = api.TradeTypeN20721
 								trade.XAmount = data["xIndex"].(*big.Int).String()
-								trade.XAsset = data["xTokenContractAddr"].(ethgo.Address).String()
-								trade.YNFTIndex = int(data["yIndex"].(*big.Int).Int64())
-								trade.YNFT = data["yTokenContractAddr"].(ethgo.Address).String()
+								trade.YAmount = data["yIndex"].(*big.Int).String()
 							case s.e721e20C:
-								trade.YAmount = data["yAmount"].(*big.Int).String()
-								trade.YAsset = data["yTokenContractAddr"].(ethgo.Address).String()
-								trade.XNFTIndex = int(data["xIndex"].(*big.Int).Int64())
-								trade.XNFT = data["xTokenContractAddr"].(ethgo.Address).String()
+								trade.Type = api.TradeTypeN72120
+								trade.YAmount = data["yIndex"].(*big.Int).String()
 							case s.e721e721C:
-								trade.XNFTIndex = int(data["xIndex"].(*big.Int).Int64())
-								trade.YNFTIndex = int(data["yIndex"].(*big.Int).Int64())
-								trade.XNFT = data["xTokenContractAddr"].(ethgo.Address).String()
-								trade.YNFT = data["yTokenContractAddr"].(ethgo.Address).String()
+								trade.Type = api.TradeTypeN721721
+								trade.XAmount = data["xIndex"].(*big.Int).String()
+								trade.YAmount = data["yIndex"].(*big.Int).String()
 							}
 							s.TradeChan <- TradeEvent{
 								Type:  TradeEventTypeCreate,

@@ -136,14 +136,12 @@ func (s *Service) AddTrade(ctx context.Context, trade *api.Trade) error {
 						   x_address, y_address,
 						   x_asset, y_asset,
 						   x_amount, y_amount,
-						   x_nft_asset, y_nft_asset,
-						   x_nft_index, y_nft_index)
+		                   trade_type)
 		VALUES (:trade_id,
 				:x_address, :y_address,
 				:x_asset, :y_asset,
-				:x_amount, :y_amount,
-				:x_nft_asset, :y_nft_asset,
-				:x_nft_index, :y_nft_index)`
+				:x_amount, :y_amount, 
+		        :trade_type)`
 
 	_, err := s.db.NamedExecContext(ctx, q, trade)
 	if err != nil {
