@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/render"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/umbracle/ethgo"
 )
 
 func (s *Server) GetAssetsByAddress(w http.ResponseWriter, r *http.Request, params api.GetAssetsByAddressParams) {
@@ -57,12 +58,19 @@ func (s Server) GetAllTrades(w http.ResponseWriter, r *http.Request, params api.
 		limit = int(*params.Limit)
 	}
 
-	pd, err := s.db.GetTrades(ctx, offset, limit, &repo.TradeFilter{Closed: params.TradeClosed.Bool()})
+	pd, count, err := s.db.GetTrades(ctx, offset, limit, &repo.TradeFilter{Closed: params.TradeClosed.Bool()})
 	if err != nil {
 		respond(w, r, s.log, err)
 		return
 	}
-	respond(w, r, s.log, pd)
+	respond(w, r, s.log, api.TradesResp{
+		Pagination: api.Pagination{
+			Limit:  limit,
+			Offset: offset,
+			Total:  count,
+		},
+		Trades: pd,
+	})
 }
 
 func (s Server) GetPersonalData(w http.ResponseWriter, r *http.Request, chatID api.PChatID) {
@@ -91,6 +99,11 @@ func (s Server) AddWallet(w http.ResponseWriter, r *http.Request, chatID api.PCh
 		respond(w, r, s.log, err)
 		return
 	}
+
+	err = s.ass.UpdateAllBalances(ctx, ethgo.HexToAddress(string(params.Wallet)))
+	if err != nil {
+		s.log.WithError(err).Error("can't update balance of new wallet")
+	}
 }
 
 func errHandler(w http.ResponseWriter, r *http.Request, err error) {
@@ -104,7 +117,7 @@ func errHandler(w http.ResponseWriter, r *http.Request, err error) {
 		header = http.StatusNotFound
 	}
 	w.WriteHeader(header)
-	render.DefaultResponder(w, r, api.ErrorResp{Error: err.Error()})
+	render.DefaultResponder(w, r, api.ErrorResp(err.Error()))
 }
 
 func respond(w http.ResponseWriter, r *http.Request, l *log.Logger, payload interface{}) {

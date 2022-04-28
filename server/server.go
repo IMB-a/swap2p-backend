@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 
+	"github.com/Pod-Box/swap2p-backend/worker/assets"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/Pod-Box/swap2p-backend/api"
@@ -20,6 +21,7 @@ type Server struct {
 	httpServer *http.Server
 	log        *log.Logger
 	db         repo.Repository
+	ass        *assets.Service
 }
 
 const (
@@ -76,6 +78,13 @@ func (s *Server) Run() {
 func SetupWithRepo(r repo.Repository) func(server *Server) error {
 	return func(s *Server) error {
 		s.db = r
+		return nil
+	}
+}
+
+func SetupWithAsset(a *assets.Service) func(server *Server) error {
+	return func(s *Server) error {
+		s.ass = a
 		return nil
 	}
 }

@@ -57,9 +57,10 @@ func (s *Service) UpdateBalance(ctx context.Context, assetAddress, walletAddress
 
 func (s *Service) GetAssets(ctx context.Context) (api.AssetList, error) {
 	q := `
-		select address  as asset_address,
-			   ticker   as asset_ticker,
-			   decimals as asset_decimals
+		select address    as asset_address,
+			   short_name as asset_short_name,
+			   full_name  as asset_full_name,
+			   decimals   as asset_decimals
 		from asset`
 
 	al := api.AssetList{}
@@ -152,10 +153,10 @@ func (s *Service) GetTradesByChatID(ctx context.Context, chatID string) (api.Tra
 	return tl, nil
 }
 
-func (s *Service) GetTrades(ctx context.Context, offset, limit int, tf *TradeFilter) (api.TradeList, error) {
+func (s *Service) GetTrades(ctx context.Context, offset, limit int, tf *TradeFilter) (api.TradeList, int, error) {
 	tl := api.TradeList{}
 
-	q := `select distinct t.trade_id                as trade_id,
+	qDef := `select distinct t.trade_id                as trade_id,
 			   x_address,
 			   y_address,
 			   x_asset,
@@ -170,16 +171,17 @@ func (s *Service) GetTrades(ctx context.Context, offset, limit int, tf *TradeFil
 				 left join telegram_user tu on a.user_id = tu.user_id
 				 left join asset xa on t.x_asset = xa.address
 				 left join asset ya on t.y_asset = xa.address`
-
 	if tf != nil {
 		if tf.Closed != nil {
 			if *tf.Closed {
-				q += "\n where closed"
+				qDef += "\n where closed"
 			} else {
-				q += "\n where not closed"
+				qDef += "\n where not closed"
 			}
 		}
 	}
+	q := qDef
+
 	q += "\n order by t.trade_id"
 	if offset > 0 {
 		q += "\n offset " + strconv.Itoa(limit)
@@ -187,12 +189,20 @@ func (s *Service) GetTrades(ctx context.Context, offset, limit int, tf *TradeFil
 	if limit > 0 {
 		q += "\n limit " + strconv.Itoa(limit)
 	}
+
 	err := s.db.SelectContext(ctx, &tl, q)
 	if err != nil {
-		return nil, errors.Wrap(err, "all trades")
+		return nil, 0, errors.Wrap(err, "all trades")
 	}
 
-	return tl, nil
+	q = "select count(*) from (\n" + qDef + "\n) a"
+	count := 0
+	err = s.db.GetContext(ctx, &count, q)
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "all trades count")
+	}
+
+	return tl, count, nil
 }
 
 func (s *Service) GetPersonalData(ctx context.Context, chatID string) (*api.PersonalData, error) {
@@ -227,10 +237,11 @@ func (s *Service) GetBalancesByChatID(ctx context.Context, chatID string) (api.B
 	bb := api.Balance{}
 
 	q := `
-		select a.ticker   as asset_name,
-			   a.address  as asset_address,
-			   b.amount   as amount,
-			   a.decimals as asset_decimals
+		select a.full_name  as asset_full_name,
+			   a.short_name as asset_short_name,
+			   a.address    as asset_address,
+			   b.amount     as amount,
+			   a.decimals   as asset_decimals
 		from balance b
 				 join telegram_user tu on b.user_id = tu.user_id
 				 join asset a on a.address = b.asset_address
@@ -248,10 +259,11 @@ func (s *Service) GetBalancesByAddress(ctx context.Context, address string) (api
 	bb := api.Balance{}
 
 	q := `
-		select a.ticker   as asset_name,
-			   a.address  as asset_address,
-			   b.amount   as amount,
-			   a.decimals as asset_decimals
+		select a.full_name  as asset_full_name,
+			   a.short_name as asset_short_name,
+			   a.address    as asset_address,
+			   b.amount     as amount,
+			   a.decimals   as asset_decimals
 		from balance b
 				 join telegram_user tu on b.user_id = tu.user_id
 				 join asset a on a.address = b.asset_address

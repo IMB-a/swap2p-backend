@@ -18,9 +18,10 @@ import (
 
 // Asset defines model for asset.
 type Asset struct {
-	Address  string `db:"asset_address" json:"address"`
-	Decimals int    `db:"asset_decimals" json:"decimals"`
-	Ticker   string `db:"asset_ticker" json:"ticker"`
+	Address        string `db:"asset_address" json:"address"`
+	AssetFullName  string `db:"asset_full_name" json:"assetFullName"`
+	AssetShortName string `db:"asset_short_name" json:"assetShortName"`
+	Decimals       int    `db:"asset_decimals" json:"decimals"`
 }
 
 // AssetList defines model for assetList.
@@ -34,6 +35,13 @@ type Error struct {
 	Error string `json:"error"`
 }
 
+// Pagination defines model for pagination.
+type Pagination struct {
+	Limit  int `json:"limit"`
+	Offset int `json:"offset"`
+	Total  int `json:"total"`
+}
+
 // PersonalData defines model for personalData.
 type PersonalData struct {
 	Balance       Balance `json:"balance"`
@@ -43,10 +51,11 @@ type PersonalData struct {
 
 // SingleBalance defines model for singleBalance.
 type SingleBalance struct {
-	Address  string `db:"asset_address" json:"address"`
-	Amount   string `db:"amount" json:"amount"`
-	Asset    string `db:"asset_name" json:"asset"`
-	Decimals int    `db:"asset_decimals" json:"decimals"`
+	Address        string `db:"asset_address" json:"address"`
+	Amount         string `db:"amount" json:"amount"`
+	AssetFullName  string `db:"asset_full_name" json:"assetFullName"`
+	AssetShortName string `db:"asset_short_name" json:"assetShortName"`
+	Decimals       int    `db:"asset_decimals" json:"decimals"`
 }
 
 // Trade defines model for trade.
@@ -57,10 +66,14 @@ type Trade struct {
 	XAmount   string `db:"x_amount" json:"xAmount"`
 	XAsset    string `db:"x_asset" json:"xAsset"`
 	XDecimals int    `db:"x_decimals" json:"xDecimals"`
+	XNFT      string `db:"x_nft_asset" json:"xNFT"`
+	XNFTIndex int    `db:"x_nft_index" json:"xNFTIndex"`
 	YAddress  string `db:"y_address" json:"yAddress"`
 	YAmount   string `db:"y_amount" json:"yAmount"`
 	YAsset    string `db:"y_asset" json:"yAsset"`
 	YDecimals int    `db:"y_decimals" json:"yDecimals"`
+	YNFT      string `db:"y_nft_asset" json:"yNFT"`
+	YNFTIndex int    `db:"y_nft_index" json:"yNFTIndex"`
 }
 
 // TradeList defines model for tradeList.
@@ -97,7 +110,10 @@ type ErrorResp interface{}
 type PersonalDataResp PersonalData
 
 // TradesResp defines model for tradesResp.
-type TradesResp TradeList
+type TradesResp struct {
+	Pagination Pagination `json:"pagination"`
+	Trades     TradeList  `json:"trades"`
+}
 
 // GetAssetsByAddressParams defines parameters for GetAssetsByAddress.
 type GetAssetsByAddressParams struct {
@@ -781,7 +797,10 @@ func (r GetAssetsByAddressResponse) StatusCode() int {
 type GetAllTradesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *TradeList
+	JSON200      *struct {
+		Pagination Pagination `json:"pagination"`
+		Trades     TradeList  `json:"trades"`
+	}
 }
 
 // Status returns HTTPResponse.Status
@@ -869,8 +888,11 @@ func (r UpdateStateResponse) StatusCode() int {
 type GetTradesByChatIDResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *TradeList
-	JSONDefault  *interface{}
+	JSON200      *struct {
+		Pagination Pagination `json:"pagination"`
+		Trades     TradeList  `json:"trades"`
+	}
+	JSONDefault *interface{}
 }
 
 // Status returns HTTPResponse.Status
@@ -1049,7 +1071,10 @@ func ParseGetAllTradesResponse(rsp *http.Response) (*GetAllTradesResponse, error
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest TradeList
+		var dest struct {
+			Pagination Pagination `json:"pagination"`
+			Trades     TradeList  `json:"trades"`
+		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -1150,7 +1175,10 @@ func ParseGetTradesByChatIDResponse(rsp *http.Response) (*GetTradesByChatIDRespo
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest TradeList
+		var dest struct {
+			Pagination Pagination `json:"pagination"`
+			Trades     TradeList  `json:"trades"`
+		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

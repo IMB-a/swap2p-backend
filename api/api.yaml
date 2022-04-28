@@ -134,6 +134,20 @@ components:
 
 
   schemas:
+    pagination:
+      type: object
+      required:
+        - total
+        - offset
+        - limit
+      properties:
+        total:
+          type: integer
+        offset:
+          type: integer
+        limit:
+          type: integer
+
     assetList:
       type: array
       items:
@@ -145,15 +159,21 @@ components:
         - address
         - ticker
         - decimals
+        - assetFullName
+        - assetShortName
       properties:
         address:
           type: string
           x-oapi-codegen-extra-tags:
             db: asset_address
-        ticker:
+        assetFullName:
           type: string
           x-oapi-codegen-extra-tags:
-            db: asset_ticker
+            db: asset_full_name
+        assetShortName:
+          type: string
+          x-oapi-codegen-extra-tags:
+            db: asset_short_name
         decimals:
           type: integer
           x-oapi-codegen-extra-tags:
@@ -177,6 +197,10 @@ components:
         - closed
         - xDecimals
         - yDecimals
+        - xNFT
+        - yNFT
+        - xNFTIndex
+        - yNFTIndex
       properties:
         id:
           type: integer
@@ -218,6 +242,22 @@ components:
           type: integer
           x-oapi-codegen-extra-tags:
             db: y_decimals
+        xNFT:
+          type: string
+          x-oapi-codegen-extra-tags:
+            db: x_nft_asset
+        yNFT:
+          type: string
+          x-oapi-codegen-extra-tags:
+            db: y_nft_asset
+        xNFTIndex:
+          type: integer
+          x-oapi-codegen-extra-tags:
+            db: x_nft_index
+        yNFTIndex:
+          type: integer
+          x-oapi-codegen-extra-tags:
+            db: y_nft_index
 
     personalData:
       type: object
@@ -249,11 +289,17 @@ components:
         - address
         - amount
         - decimals
+        - assetFullName
+        - assetShortName
       properties:
-        asset:
+        assetShortName:
           type: string
           x-oapi-codegen-extra-tags:
-            db: asset_name
+            db: asset_short_name
+        assetFullName:
+          type: string
+          x-oapi-codegen-extra-tags:
+            db: asset_full_name
         address:
           type: string
           x-oapi-codegen-extra-tags:
@@ -287,7 +333,15 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/tradeList'
+            type: object
+            required:
+              - trades
+              - pagination
+            properties:
+              trades:
+                $ref: '#/components/schemas/tradeList'
+              pagination:
+                $ref: '#/components/schemas/pagination'
     assetsResp:
       description: ''
       content:

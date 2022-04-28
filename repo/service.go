@@ -4,16 +4,19 @@ import (
 	"context"
 
 	"github.com/Pod-Box/swap2p-backend/api"
-	"github.com/Pod-Box/swap2p-backend/worker/assets"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
 
 var _ Repository = &Service{}
-var _ assets.BalanceUpdater = &Service{}
 
 type Service struct {
 	db *sqlx.DB
+}
+
+func (s *Service) UpdateAsset(ctx context.Context, assetAddress, ticker string, decimal int64) error {
+	// TODO implement me
+	panic("implement me")
 }
 
 func NewService(cfg *Config) (*Service, error) {
@@ -38,12 +41,16 @@ type Repository interface {
 	BalanceRepository
 }
 
+type UserGetter interface {
+	GetAllUsers(ctx context.Context) ([]api.PersonalData, error)
+}
+
 type UserRepository interface {
 	GetPersonalData(ctx context.Context, chatID string) (*api.PersonalData, error)
 	UpsertPersonAddress(ctx context.Context, chatID, address string) error
 	UpdatePersonState(ctx context.Context, chatID, state string) error
 	UpsertPerson(ctx context.Context, chatID string) error
-	GetAllUsers(ctx context.Context) ([]api.PersonalData, error)
+	UserGetter
 }
 
 type TradeFilter struct {
@@ -51,7 +58,7 @@ type TradeFilter struct {
 }
 
 type TradeRepository interface {
-	GetTrades(ctx context.Context, offset, limit int, tf *TradeFilter) (api.TradeList, error)
+	GetTrades(ctx context.Context, offset, limit int, tf *TradeFilter) (api.TradeList, int, error)
 	GetTradesByChatID(ctx context.Context, chatID string) (api.TradeList, error)
 	AddTrade(ctx context.Context, trade *api.Trade) error
 	TradeExists(ctx context.Context, tradeID int) (bool, error)
@@ -60,6 +67,7 @@ type TradeRepository interface {
 
 type AssetRepository interface {
 	GetAssets(ctx context.Context) (api.AssetList, error)
+	UpdateAsset(ctx context.Context, assetAddress, ticker string, decimal int64) error
 }
 
 type BalanceRepository interface {

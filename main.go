@@ -13,8 +13,6 @@ import (
 	"github.com/Pod-Box/swap2p-backend/worker"
 	"github.com/Pod-Box/swap2p-backend/worker/assets"
 	logger "github.com/sirupsen/logrus"
-	"github.com/umbracle/ethgo"
-	"github.com/umbracle/ethgo/contract/builtin/erc20"
 	"github.com/umbracle/ethgo/jsonrpc"
 	"gopkg.in/yaml.v3"
 )
@@ -36,7 +34,18 @@ func main() {
 		log.WithError(err).Fatal("can't setup repo")
 	}
 
-	srv, err := server.NewServer(&cfg.Server, log, server.SetupWithRepo(r))
+	c, err := jsonrpc.NewClient(cfg.Worker.JSONRPCClient)
+	if err != nil {
+		log.WithError(err).Fatal()
+		return
+	}
+
+	ass := assets.NewService(c, r, r, r, time.Second*1, log)
+
+	srv, err := server.NewServer(&cfg.Server, log,
+		server.SetupWithRepo(r),
+		server.SetupWithAsset(ass),
+	)
 	if err != nil {
 		log.WithError(err).Fatal("can't setup server")
 	}
@@ -50,7 +59,6 @@ func main() {
 
 	go func() {
 		for t := range wrk.TradeChan {
-			log.Println(t)
 			switch t.Type {
 			case worker.TradeEventTypeCreate:
 				err = r.AddTrade(context.Background(), &t.Trade)
@@ -69,37 +77,7 @@ func main() {
 		fmt.Println("!!!!!!!!!!!CLOSED!!!!!!!!!!!!")
 	}()
 
-	go func() {
-		ctx := context.Background()
-		ass := assets.NewService(r, time.Second*1, log)
-
-		c, err := jsonrpc.NewClient(cfg.Worker.JSONRPCClient)
-		if err != nil {
-			log.WithError(err).Error()
-			return
-		}
-
-		for {
-			time.Sleep(time.Second * 100)
-			aa, err := r.GetAssets(ctx)
-			if err != nil {
-				log.WithError(err).Error("get assets")
-				continue
-			}
-			uu, err := r.GetAllUsers(ctx)
-			if err != nil {
-				log.WithError(err).Error("get all users")
-				continue
-			}
-			for _, a := range aa {
-				e20 := erc20.NewERC20(ethgo.HexToAddress(a.Address), c)
-				time.Sleep(time.Second * 1)
-				for _, u := range uu {
-					ass.UpdateBalance(ctx, e20, ethgo.HexToAddress(u.WalletAddress))
-				}
-			}
-		}
-	}()
+	// go ass.RunBalanceUpdater(context.Background(), time.NewTicker(time.Minute))
 
 	srv.Run()
 }

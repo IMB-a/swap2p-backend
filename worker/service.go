@@ -27,15 +27,25 @@ type TradeEvent struct {
 }
 
 type Service struct {
-	ac      *abi.ABI
+	e20e20  *abi.ABI
+	e20e20C ethgo.Address
+
+	e20e721  *abi.ABI
+	e20e721C ethgo.Address
+
+	e721e20  *abi.ABI
+	e721e20C ethgo.Address
+
+	e721e721  *abi.ABI
+	e721e721C ethgo.Address
+
 	idName  map[string]*abi.Method
 	idEvent map[string]*abi.Event
 
 	TradeChan chan TradeEvent
 	ErrChan   chan error
 
-	cAddress ethgo.Address
-	jsonCli  *jsonrpc.Client
+	jsonCli *jsonrpc.Client
 
 	t *tracker.Tracker
 }
@@ -46,21 +56,42 @@ func NewService(cfg *Config) (*Service, error) {
 		ErrChan:   make(chan error),
 	}
 
-	abiContract, err := abi.NewABI(cfg.AbiJSON)
+	e20e20, err := abi.NewABI(cfg.E20E20)
 	if err != nil {
-		return nil, errors.Wrap(err, "new abi")
+		return nil, errors.Wrap(err, "new abi e20 -> e20")
+	}
+	e20e721, err := abi.NewABI(cfg.E20E721)
+	if err != nil {
+		return nil, errors.Wrap(err, "new abi e20 -> e721")
+	}
+	e721e20, err := abi.NewABI(cfg.E721E20)
+	if err != nil {
+		return nil, errors.Wrap(err, "new abi e721 -> e20")
+	}
+	e721e721, err := abi.NewABI(cfg.E721E721)
+	if err != nil {
+		return nil, errors.Wrap(err, "new abi e721 -> e721")
 	}
 
-	s.ac = abiContract
+	s.e20e20 = e20e20
+	s.e20e721 = e20e721
+	s.e721e20 = e721e20
+	s.e721e721 = e721e721
+
+	s.e20e20C = ethgo.HexToAddress(cfg.E20E20Contract)
+	s.e20e721C = ethgo.HexToAddress(cfg.E20E721Contract)
+	s.e721e20C = ethgo.HexToAddress(cfg.E721E20Contract)
+	s.e721e721C = ethgo.HexToAddress(cfg.E721E721Contract)
+
 	s.idName = map[string]*abi.Method{}
 	s.idEvent = map[string]*abi.Event{}
-	for _, v := range abiContract.Methods {
+
+	for _, v := range e20e20.Methods {
 		s.idName[hex.EncodeToString(v.ID())] = v
 	}
-	for _, v := range abiContract.Events {
+	for _, v := range e20e20.Events {
 		s.idEvent[v.ID().String()] = v
 	}
-	s.cAddress = ethgo.HexToAddress(cfg.ContractAddress)
 
 	client, err := jsonrpc.NewClient(cfg.JSONRPCClient)
 	if err != nil {
@@ -70,7 +101,7 @@ func NewService(cfg *Config) (*Service, error) {
 	s.jsonCli = client
 
 	track, err := tracker.NewTracker(client.Eth(), tracker.WithFilter(&tracker.FilterConfig{
-		Address: []ethgo.Address{s.cAddress},
+		Address: []ethgo.Address{s.e20e20C, s.e20e721C, s.e721e20C, s.e721e721C},
 		Start:   cfg.BlockFrom,
 	}))
 	if err != nil {
