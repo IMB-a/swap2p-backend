@@ -95,9 +95,9 @@ func (s *Service) UpdateAllBalances(ctx context.Context, a ethgo.Address) error 
 	}
 
 	for _, as := range aa {
-		e20 := erc20.NewERC20(ethgo.HexToAddress(as.Address), s.c)
 		time.Sleep(s.freq)
-		b, err := e20.BalanceOf(ethgo.HexToAddress(as.Address), ethgo.Latest)
+		e20 := erc20.NewERC20(ethgo.HexToAddress(as.Address), s.c)
+		b, err := e20.BalanceOf(a, ethgo.Latest)
 		if err != nil {
 			if err.Error() != "empty response" {
 				s.log.WithError(err).Error("get balance")
