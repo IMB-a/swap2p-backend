@@ -14,11 +14,6 @@ type Service struct {
 	db *sqlx.DB
 }
 
-func (s *Service) UpdateAsset(ctx context.Context, assetAddress, ticker string, decimal int64) error {
-	// TODO implement me
-	panic("implement me")
-}
-
 func NewService(cfg *Config) (*Service, error) {
 	connStr, err := connectionString(cfg)
 	if err != nil {
@@ -67,7 +62,8 @@ type TradeRepository interface {
 
 type AssetRepository interface {
 	GetAssets(ctx context.Context) (api.AssetList, error)
-	UpdateAsset(ctx context.Context, assetAddress, ticker string, decimal int64) error
+	UpdateAsset(ctx context.Context, assetAddress, shortName, fullName string, decimal int64) error
+	AddAsset(ctx context.Context, assetAddress, name string, decimal int) error
 }
 
 type BalanceRepository interface {

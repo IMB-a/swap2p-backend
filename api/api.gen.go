@@ -82,6 +82,9 @@ type TradeList []Trade
 // PChatID defines model for pChatID.
 type PChatID string
 
+// QAssetAddress defines model for qAssetAddress.
+type QAssetAddress string
+
 // QChatState defines model for qChatState.
 type QChatState string
 
@@ -113,6 +116,11 @@ type PersonalDataResp PersonalData
 type TradesResp struct {
 	Pagination Pagination `json:"pagination"`
 	Trades     TradeList  `json:"trades"`
+}
+
+// AddAssetParams defines parameters for AddAsset.
+type AddAssetParams struct {
+	Asset QAssetAddress `json:"asset"`
 }
 
 // GetAssetsByAddressParams defines parameters for GetAssetsByAddress.
@@ -213,6 +221,9 @@ type ClientInterface interface {
 	// GetAllAssets request
 	GetAllAssets(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// AddAsset request
+	AddAsset(ctx context.Context, params *AddAssetParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetAssetsByAddress request
 	GetAssetsByAddress(ctx context.Context, params *GetAssetsByAddressParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -237,6 +248,18 @@ type ClientInterface interface {
 
 func (c *Client) GetAllAssets(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetAllAssetsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AddAsset(ctx context.Context, params *AddAssetParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddAssetRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -351,6 +374,49 @@ func NewGetAllAssetsRequest(server string) (*http.Request, error) {
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewAddAssetRequest generates requests for AddAsset
+func NewAddAssetRequest(server string, params *AddAssetParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/assets")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	queryValues := queryURL.Query()
+
+	if queryFrag, err := runtime.StyleParamWithLocation("form", true, "asset", runtime.ParamLocationQuery, params.Asset); err != nil {
+		return nil, err
+	} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+		return nil, err
+	} else {
+		for k, v := range parsed {
+			for _, v2 := range v {
+				queryValues.Add(k, v2)
+			}
+		}
+	}
+
+	queryURL.RawQuery = queryValues.Encode()
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -728,6 +794,9 @@ type ClientWithResponsesInterface interface {
 	// GetAllAssets request
 	GetAllAssetsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetAllAssetsResponse, error)
 
+	// AddAsset request
+	AddAssetWithResponse(ctx context.Context, params *AddAssetParams, reqEditors ...RequestEditorFn) (*AddAssetResponse, error)
+
 	// GetAssetsByAddress request
 	GetAssetsByAddressWithResponse(ctx context.Context, params *GetAssetsByAddressParams, reqEditors ...RequestEditorFn) (*GetAssetsByAddressResponse, error)
 
@@ -766,6 +835,28 @@ func (r GetAllAssetsResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetAllAssetsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type AddAssetResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AssetList
+}
+
+// Status returns HTTPResponse.Status
+func (r AddAssetResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AddAssetResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -941,6 +1032,15 @@ func (c *ClientWithResponses) GetAllAssetsWithResponse(ctx context.Context, reqE
 	return ParseGetAllAssetsResponse(rsp)
 }
 
+// AddAssetWithResponse request returning *AddAssetResponse
+func (c *ClientWithResponses) AddAssetWithResponse(ctx context.Context, params *AddAssetParams, reqEditors ...RequestEditorFn) (*AddAssetResponse, error) {
+	rsp, err := c.AddAsset(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddAssetResponse(rsp)
+}
+
 // GetAssetsByAddressWithResponse request returning *GetAssetsByAddressResponse
 func (c *ClientWithResponses) GetAssetsByAddressWithResponse(ctx context.Context, params *GetAssetsByAddressParams, reqEditors ...RequestEditorFn) (*GetAssetsByAddressResponse, error) {
 	rsp, err := c.GetAssetsByAddress(ctx, params, reqEditors...)
@@ -1013,6 +1113,32 @@ func ParseGetAllAssetsResponse(rsp *http.Response) (*GetAllAssetsResponse, error
 	}
 
 	response := &GetAllAssetsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AssetList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAddAssetResponse parses an HTTP response from a AddAssetWithResponse call
+func ParseAddAssetResponse(rsp *http.Response) (*AddAssetResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AddAssetResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -1218,6 +1344,9 @@ type ServerInterface interface {
 	// (GET /assets)
 	GetAllAssets(w http.ResponseWriter, r *http.Request)
 
+	// (POST /assets)
+	AddAsset(w http.ResponseWriter, r *http.Request, params AddAssetParams)
+
 	// (GET /balance)
 	GetAssetsByAddress(w http.ResponseWriter, r *http.Request, params GetAssetsByAddressParams)
 
@@ -1255,6 +1384,40 @@ func (siw *ServerInterfaceWrapper) GetAllAssets(w http.ResponseWriter, r *http.R
 
 	var handler = func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetAllAssets(w, r)
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler(w, r.WithContext(ctx))
+}
+
+// AddAsset operation middleware
+func (siw *ServerInterfaceWrapper) AddAsset(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AddAssetParams
+
+	// ------------- Required query parameter "asset" -------------
+	if paramValue := r.URL.Query().Get("asset"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "asset"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "asset", r.URL.Query(), &params.Asset)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "asset", Err: err})
+		return
+	}
+
+	var handler = func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddAsset(w, r, params)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1630,6 +1793,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/assets", wrapper.GetAllAssets)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/assets", wrapper.AddAsset)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/balance", wrapper.GetAssetsByAddress)

@@ -38,6 +38,19 @@ func NewService(c *jsonrpc.Client, bu BalanceUpdater, aa repo.AssetRepository, u
 	}
 }
 
+func (s *Service) GetAssetData(address string) (string, int, error) {
+	e20 := erc20.NewERC20(ethgo.HexToAddress(address), s.c)
+	name, err := e20.Name(ethgo.Latest)
+	if err != nil {
+		return "", 0, errors.Wrap(err, "name")
+	}
+	decimals, err := e20.Decimals(ethgo.Latest)
+	if err != nil {
+		return "", 0, errors.Wrap(err, "decimals")
+	}
+	return name, int(decimals), nil
+}
+
 func (s *Service) UpdateBalance(ctx context.Context, e *erc20.ERC20, aa ...ethgo.Address) {
 	for _, a := range aa {
 		time.Sleep(s.freq)

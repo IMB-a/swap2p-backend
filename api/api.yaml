@@ -77,6 +77,13 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/assetsResp'
+    post:
+      operationId: addAsset
+      parameters:
+        - $ref: '#/components/parameters/qAssetAddress'
+      responses:
+        200:
+          $ref: '#/components/responses/assetsResp'
 
   /balance:
     parameters:
@@ -115,6 +122,12 @@ components:
         type: boolean
         default: false
       required: false
+    qAssetAddress:
+      name: asset
+      in: query
+      schema:
+        type: string
+      required: true
 
 
     qOffset:

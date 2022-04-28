@@ -12,6 +12,20 @@ import (
 	"github.com/umbracle/ethgo"
 )
 
+func (s *Server) AddAsset(w http.ResponseWriter, r *http.Request, params api.AddAssetParams) {
+	ctx := r.Context()
+	name, dec, err := s.ass.GetAssetData(string(params.Asset))
+	if err != nil {
+		respond(w, r, s.log, errors.Wrap(err, "get asset data"))
+		return
+	}
+	err = s.db.AddAsset(ctx, string(params.Asset), name, dec)
+	if err != nil {
+		respond(w, r, s.log, errors.Wrap(err, "add asset"))
+		return
+	}
+}
+
 func (s *Server) GetAssetsByAddress(w http.ResponseWriter, r *http.Request, params api.GetAssetsByAddressParams) {
 	ctx := r.Context()
 	al, err := s.db.GetBalancesByAddress(ctx, string(params.Wallet))
@@ -125,6 +139,9 @@ func respond(w http.ResponseWriter, r *http.Request, l *log.Logger, payload inte
 		l.WithError(err).Error()
 		errHandler(w, r, err)
 		return
+	}
+	if payload == nil {
+		payload = []byte("{}")
 	}
 	render.DefaultResponder(w, r, payload)
 }

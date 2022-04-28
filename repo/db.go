@@ -11,6 +11,24 @@ import (
 	"github.com/pkg/errors"
 )
 
+func (s *Service) AddAsset(ctx context.Context, assetAddress, name string, decimal int) error {
+	q := `insert into asset (address, decimals, short_name, full_name) VALUES ($1, $2, $3, $3)`
+	_, err := s.db.ExecContext(ctx, q, assetAddress, decimal, name)
+	if err != nil {
+		return errors.Wrap(err, "insert asset")
+	}
+	return nil
+}
+
+func (s *Service) UpdateAsset(ctx context.Context, assetAddress, shortName, fullName string, decimal int64) error {
+	q := `update asset set short_name = $2, full_name = $3, decimals = $4 where address = $1`
+	_, err := s.db.ExecContext(ctx, q, assetAddress, shortName, fullName, decimal)
+	if err != nil {
+		return errors.Wrap(err, "update asset")
+	}
+	return nil
+}
+
 func (s *Service) GetAllUsers(ctx context.Context) ([]api.PersonalData, error) {
 	pd := make([]api.PersonalData, 0)
 
