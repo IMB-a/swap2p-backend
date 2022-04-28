@@ -56,8 +56,8 @@ type TradeRepository interface {
 	GetTrades(ctx context.Context, offset, limit int, tf *TradeFilter) (api.TradeList, int, error)
 	GetTradesByChatID(ctx context.Context, chatID string) (api.TradeList, error)
 	AddTrade(ctx context.Context, trade *api.Trade) error
-	TradeExists(ctx context.Context, tradeID int) (bool, error)
-	CloseTrade(ctx context.Context, tradeID int, yAddress string) error
+	TradeExists(ctx context.Context, tradeID int, tradeType api.TradeType) (bool, error)
+	CloseTrade(ctx context.Context, tradeID int, tradeType api.TradeType, yAddress string) error
 }
 
 type AssetRepository interface {

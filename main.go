@@ -68,7 +68,7 @@ func main() {
 					}
 				}
 			case worker.TradeEventTypeAccept:
-				err = r.CloseTrade(context.Background(), t.Id, t.Trade.YAddress)
+				err = r.CloseTrade(context.Background(), t.Id, t.Trade.Type, t.Trade.YAddress)
 				if err != nil {
 					log.WithError(err).Error("can't close trade")
 				}

@@ -174,11 +174,25 @@ func (s *Service) Run(ctx context.Context) {
 								Trade: trade,
 							}
 						case "EscrowAccepted":
+							trade := api.Trade{
+								Id:       int(data["escrowIndex"].(*big.Int).Int64()),
+								YAddress: data["yOwner"].(ethgo.Address).String(),
+							}
+							switch e.Address {
+							case s.e20e20C:
+								trade.Type = api.TradeTypeN2020
+							case s.e20e721C:
+								trade.Type = api.TradeTypeN20721
+							case s.e721e20C:
+								trade.Type = api.TradeTypeN72120
+							case s.e721e721C:
+								trade.Type = api.TradeTypeN721721
+							default:
+								continue
+							}
 							s.TradeChan <- TradeEvent{
-								Type: TradeEventTypeAccept,
-								Trade: api.Trade{Id: int(data["escrowIndex"].(*big.Int).Int64()),
-									YAddress: data["yOwner"].(ethgo.Address).String(),
-								},
+								Type:  TradeEventTypeAccept,
+								Trade: trade,
 							}
 						case "EscrowRejected":
 							s.TradeChan <- TradeEvent{

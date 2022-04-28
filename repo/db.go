@@ -90,16 +90,16 @@ func (s *Service) GetAssets(ctx context.Context) (api.AssetList, error) {
 	return al, nil
 }
 
-func (s *Service) CloseTrade(ctx context.Context, tradeID int, yAddress string) error {
-	q := `update trade set closed = true, y_address = $2 where trade_id = $1`
+func (s *Service) CloseTrade(ctx context.Context, tradeID int, tt api.TradeType, yAddress string) error {
+	q := `update trade set closed = true, y_address = $2 where trade_id = $1 and trade_type = $3`
 
-	if exists, err := s.TradeExists(ctx, tradeID); err != nil {
+	if exists, err := s.TradeExists(ctx, tradeID, tt); err != nil {
 		return err
 	} else if !exists {
-		q = `insert into trade (trade_id, y_address, closed) VALUES ($1, $2, true)`
+		q = `insert into trade (trade_id, y_address, trade_type, closed) VALUES ($1, $2, $3, true)`
 	}
 
-	_, err := s.db.ExecContext(ctx, q, tradeID, yAddress)
+	_, err := s.db.ExecContext(ctx, q, tradeID, yAddress, tt)
 	if err != nil {
 		return errors.Wrap(err, "close trade")
 	}
@@ -107,12 +107,12 @@ func (s *Service) CloseTrade(ctx context.Context, tradeID int, yAddress string) 
 	return nil
 }
 
-func (s *Service) TradeExists(ctx context.Context, tradeID int) (bool, error) {
-	q := `select trade_id from trade where trade_id = $1`
+func (s *Service) TradeExists(ctx context.Context, tradeID int, tt api.TradeType) (bool, error) {
+	q := `select trade_id from trade where trade_id = $1 and trade_type = $2`
 
 	var tid int
 
-	err := s.db.GetContext(ctx, &tid, q, tradeID)
+	err := s.db.GetContext(ctx, &tid, q, tradeID, tt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return false, nil
@@ -125,7 +125,7 @@ func (s *Service) TradeExists(ctx context.Context, tradeID int) (bool, error) {
 var TradeAlreadyExistsErr = errors.New("trade already exists")
 
 func (s *Service) AddTrade(ctx context.Context, trade *api.Trade) error {
-	if exists, err := s.TradeExists(ctx, trade.Id); err != nil {
+	if exists, err := s.TradeExists(ctx, trade.Id, trade.Type); err != nil {
 		return err
 	} else if exists {
 		return TradeAlreadyExistsErr
