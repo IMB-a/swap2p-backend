@@ -2,7 +2,6 @@ package worker
 
 import (
 	"context"
-	"encoding/hex"
 	"math/big"
 
 	"github.com/Pod-Box/swap2p-backend/api"
@@ -86,10 +85,16 @@ func NewService(cfg *Config) (*Service, error) {
 	s.idName = map[string]*abi.Method{}
 	s.idEvent = map[string]*abi.Event{}
 
-	for _, v := range e20e20.Methods {
-		s.idName[hex.EncodeToString(v.ID())] = v
-	}
 	for _, v := range e20e20.Events {
+		s.idEvent[v.ID().String()] = v
+	}
+	for _, v := range e20e721.Events {
+		s.idEvent[v.ID().String()] = v
+	}
+	for _, v := range e721e20.Events {
+		s.idEvent[v.ID().String()] = v
+	}
+	for _, v := range e721e721.Events {
 		s.idEvent[v.ID().String()] = v
 	}
 
@@ -131,17 +136,38 @@ func (s *Service) Run(ctx context.Context) {
 						switch v.Name {
 						case "EscrowCreated":
 							id := data["escrowIndex"].(*big.Int)
+							trade := api.Trade{
+								Id:       int(id.Int64()),
+								XAmount:  "0",
+								YAmount:  "0",
+								XAddress: data["xOwner"].(ethgo.Address).String(),
+								YAddress: data["yOwner"].(ethgo.Address).String(),
+							}
+							switch e.Address {
+							case s.e20e20C:
+								trade.XAmount = data["xAmount"].(*big.Int).String()
+								trade.YAmount = data["yAmount"].(*big.Int).String()
+								trade.YAsset = data["yTokenContractAddr"].(ethgo.Address).String()
+								trade.XAsset = data["xTokenContractAddr"].(ethgo.Address).String()
+							case s.e20e721C:
+								trade.XAmount = data["xIndex"].(*big.Int).String()
+								trade.XAsset = data["xTokenContractAddr"].(ethgo.Address).String()
+								trade.YNFTIndex = int(data["yIndex"].(*big.Int).Int64())
+								trade.YNFT = data["yTokenContractAddr"].(ethgo.Address).String()
+							case s.e721e20C:
+								trade.YAmount = data["yAmount"].(*big.Int).String()
+								trade.YAsset = data["yTokenContractAddr"].(ethgo.Address).String()
+								trade.XNFTIndex = int(data["xIndex"].(*big.Int).Int64())
+								trade.XNFT = data["xTokenContractAddr"].(ethgo.Address).String()
+							case s.e721e721C:
+								trade.XNFTIndex = int(data["xIndex"].(*big.Int).Int64())
+								trade.YNFTIndex = int(data["yIndex"].(*big.Int).Int64())
+								trade.XNFT = data["xTokenContractAddr"].(ethgo.Address).String()
+								trade.YNFT = data["yTokenContractAddr"].(ethgo.Address).String()
+							}
 							s.TradeChan <- TradeEvent{
-								Type: TradeEventTypeCreate,
-								Trade: api.Trade{
-									Id:       int(id.Int64()),
-									XAddress: data["xOwner"].(ethgo.Address).String(),
-									XAmount:  data["xAmount"].(*big.Int).String(),
-									XAsset:   data["xTokenContractAddr"].(ethgo.Address).String(),
-									YAddress: data["yOwner"].(ethgo.Address).String(),
-									YAmount:  data["yAmount"].(*big.Int).String(),
-									YAsset:   data["yTokenContractAddr"].(ethgo.Address).String(),
-								},
+								Type:  TradeEventTypeCreate,
+								Trade: trade,
 							}
 						case "EscrowAccepted":
 							s.TradeChan <- TradeEvent{

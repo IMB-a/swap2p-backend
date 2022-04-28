@@ -131,8 +131,19 @@ func (s *Service) AddTrade(ctx context.Context, trade *api.Trade) error {
 		return TradeAlreadyExistsErr
 	}
 
-	q := `insert into trade (trade_id, x_address, y_address, x_asset, y_asset, x_amount, y_amount) 
-VALUES (:trade_id, :x_address, :y_address, :x_asset, :y_asset, :x_amount, :y_amount)`
+	q := `
+		insert into trade (trade_id,
+						   x_address, y_address,
+						   x_asset, y_asset,
+						   x_amount, y_amount,
+						   x_nft_asset, y_nft_asset,
+						   x_nft_index, y_nft_index)
+		VALUES (:trade_id,
+				:x_address, :y_address,
+				:x_asset, :y_asset,
+				:x_amount, :y_amount,
+				:x_nft_asset, :y_nft_asset,
+				:x_nft_index, :y_nft_index)`
 
 	_, err := s.db.NamedExecContext(ctx, q, trade)
 	if err != nil {

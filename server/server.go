@@ -45,6 +45,7 @@ func NewServer(cfg *Config, l *log.Logger, opts ...SetupOption) (*Server, error)
 
 	mux := chi.NewRouter()
 	mux.Use(middleware.NoCache)
+	mux.Use(middleware.Throttle(2))
 	mux.Use(middleware.SetHeader("Content-Type", applicationJSONContentType))
 	mux.Use(cors.Handler(corsOptions))
 

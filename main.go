@@ -77,7 +77,7 @@ func main() {
 		fmt.Println("!!!!!!!!!!!CLOSED!!!!!!!!!!!!")
 	}()
 
-	// go ass.RunBalanceUpdater(context.Background(), time.NewTicker(time.Minute))
+	go ass.RunBalanceUpdater(context.Background(), time.NewTicker(time.Minute))
 
 	srv.Run()
 }
