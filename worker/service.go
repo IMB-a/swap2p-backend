@@ -124,6 +124,9 @@ func (s *Service) Run(ctx context.Context) {
 			for _, e := range evt.Added {
 				for _, t := range e.Topics {
 					if v, ok := s.idEvent[t.String()]; ok {
+						if e.Address != s.e20e20C && e.Address != s.e20e721C && e.Address != s.e721e20C && e.Address != s.e721e721C {
+							continue
+						}
 						if e.Data == nil {
 							continue
 						}
@@ -163,6 +166,8 @@ func (s *Service) Run(ctx context.Context) {
 								trade.Type = api.TradeTypeN721721
 								trade.XAmount = data["xIndex"].(*big.Int).String()
 								trade.YAmount = data["yIndex"].(*big.Int).String()
+							default:
+								continue
 							}
 							s.TradeChan <- TradeEvent{
 								Type:  TradeEventTypeCreate,
