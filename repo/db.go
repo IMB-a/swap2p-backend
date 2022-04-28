@@ -164,7 +164,8 @@ func (s *Service) GetTradesByChatID(ctx context.Context, chatID string) (api.Tra
 			   y_amount,
 			   closed,
 			   coalesce(xa.decimals, 18) as x_decimals,
-			   coalesce(ya.decimals, 18) as y_decimals
+			   coalesce(ya.decimals, 18) as y_decimals,
+			   trade_type
 		from trade t
 				 join address a on a.address = t.x_address or a.address = t.y_address
 				 join telegram_user tu on a.user_id = tu.user_id
@@ -192,7 +193,8 @@ func (s *Service) GetTrades(ctx context.Context, offset, limit int, tf *TradeFil
 			   y_amount,
 			   closed,
 			   coalesce(xa.decimals, 18) as x_decimals,
-			   coalesce(ya.decimals, 18) as y_decimals
+			   coalesce(ya.decimals, 18) as y_decimals,
+			   trade_type
 		from trade t
 				 left join address a on a.address = t.x_address or a.address = t.y_address
 				 left join telegram_user tu on a.user_id = tu.user_id
