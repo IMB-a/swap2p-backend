@@ -86,16 +86,16 @@ func NewService(cfg *Config) (*Service, error) {
 	s.idEvent = map[string]*abi.Event{}
 
 	for _, v := range e20e20.Events {
-		s.idEvent[v.ID().String()] = v
+		s.idEvent[v.ID().String()+s.e20e20C.String()] = v
 	}
 	for _, v := range e20e721.Events {
-		s.idEvent[v.ID().String()] = v
+		s.idEvent[v.ID().String()+s.e20e721C.String()] = v
 	}
 	for _, v := range e721e20.Events {
-		s.idEvent[v.ID().String()] = v
+		s.idEvent[v.ID().String()+s.e721e20C.String()] = v
 	}
 	for _, v := range e721e721.Events {
-		s.idEvent[v.ID().String()] = v
+		s.idEvent[v.ID().String()+s.e721e721C.String()] = v
 	}
 
 	client, err := jsonrpc.NewClient(cfg.JSONRPCClient)
@@ -123,7 +123,7 @@ func (s *Service) Run(ctx context.Context) {
 		for evt := range s.t.EventCh {
 			for _, e := range evt.Added {
 				for _, t := range e.Topics {
-					if v, ok := s.idEvent[t.String()]; ok {
+					if v, ok := s.idEvent[t.String()+e.Address.String()]; ok {
 						if e.Address != s.e20e20C && e.Address != s.e20e721C && e.Address != s.e721e20C && e.Address != s.e721e721C {
 							continue
 						}
@@ -157,11 +157,12 @@ func (s *Service) Run(ctx context.Context) {
 								trade.XAsset = data["xTokenContractAddr"].(ethgo.Address).String()
 							case s.e20e721C:
 								trade.Type = api.TradeTypeN20721
-								trade.XAmount = data["xIndex"].(*big.Int).String()
+								trade.XAmount = data["xAmount"].(*big.Int).String()
 								trade.YAmount = data["yIndex"].(*big.Int).String()
 							case s.e721e20C:
 								trade.Type = api.TradeTypeN72120
-								trade.YAmount = data["yIndex"].(*big.Int).String()
+								trade.XAmount = data["xIndex"].(*big.Int).String()
+								trade.YAmount = data["yAmount"].(*big.Int).String()
 							case s.e721e721C:
 								trade.Type = api.TradeTypeN721721
 								trade.XAmount = data["xIndex"].(*big.Int).String()
